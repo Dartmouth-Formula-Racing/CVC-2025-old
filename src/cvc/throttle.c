@@ -46,6 +46,6 @@ void Throttle_ProcessThrottle() {
         throttle_position = 0.0;
     }
 
-    CVC_data[CVC_THROTTLE] = (uint16_t)(throttle_position * 100);
+    CVC_data[CVC_THROTTLE] = (uint16_t)(throttle_position * 1000);
     CVC_data[CVC_THROTTLE_VALID] = throttle_valid;
 }

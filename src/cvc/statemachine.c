@@ -110,7 +110,6 @@ void CVC_StateMachine() {
                 break;
             }
 
-            // TODO: Implement wait for drive button press
             if (!drive_lockout && (requested_drive_mode == DRIVE || requested_drive_mode == REVERSE)) {
                 // Check if throttle is valid and not pressed
                 if (CVC_data[CVC_THROTTLE_VALID] && throttle <= MIN_RTD_THROTTLE) {

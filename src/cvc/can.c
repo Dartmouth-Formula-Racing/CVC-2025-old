@@ -65,7 +65,7 @@ void CAN_Process_RX() {
     uint32_t count = 0;
 
     __disable_irq();
-    while (CANRxBuffer.head != CANRxBuffer.tail  && count < CAN_BUFFER_LENGTH) {
+    while (CANRxBuffer.head != CANRxBuffer.tail && count < CAN_BUFFER_LENGTH) {
         tempbuffer[count] = CANRxBuffer.buffer[CANRxBuffer.tail];
         CANRxBuffer.tail = (CANRxBuffer.tail + 1) % CAN_BUFFER_LENGTH;
         count++;
