@@ -28,6 +28,7 @@
 #include <cvc/throttle.h>
 #include <cvc/statemachine.h>
 #include <cvc/torque.h>
+#include <cvc/misc.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -134,6 +135,7 @@ int main(void)
     CVC_StateMachine();
     Torque_CalculateAcceleration();
     Torque_CalculateTorque();
+    CVC_Cooling_Task();
 
     // Send CVC data to rest of vehicle
     CAN_BroadcastSafety();

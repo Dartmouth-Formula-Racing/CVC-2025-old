@@ -24,8 +24,6 @@ void CVC_StateMachine() {
     volatile drive_state_t requested_drive_mode = CVC_data[DASH_REQUESTED_STATE];
     volatile bool air2 = false;
     volatile bool buzzer = false;
-    volatile bool battery_fans = false;
-    volatile bool pumps = false;
 
     volatile float HV_voltage = CVC_data[BMS_TOTAL_VOLTAGE] * 0.01;
     volatile float Inverter1_voltage = (float)((int16_t)CVC_data[INVERTER1_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
@@ -159,7 +157,6 @@ void CVC_StateMachine() {
                 state = CHARGING;
                 air2 = true;
             }
-            battery_fans = true;
             if (charging) {
                 state = CHARGING;
                 drive_lockout = true;
@@ -193,10 +190,8 @@ void CVC_StateMachine() {
                 state = NOT_READY_TO_DRIVE;
             } else if (requested_drive_mode == DRIVE && CVC_data[CVC_DRIVE_MODE] != REVERSE) {
                 drive_mode = DRIVE;
-                pumps = true;
             } else if (requested_drive_mode == REVERSE && CVC_data[CVC_DRIVE_MODE] != DRIVE) {
                 drive_mode = REVERSE;
-                pumps = true;
             } else {
                 state = NOT_READY_TO_DRIVE;
             }
@@ -209,8 +204,6 @@ void CVC_StateMachine() {
     CVC_data[CVC_STATE] = state;
     CVC_data[CVC_DRIVE_MODE] = drive_mode;
     Relay_Set(AIR2, air2);
-    Relay_Set(BatteryFans, battery_fans);
-    Relay_Set(Pumps, pumps);
     if (ENABLE_BUZZER) {
         Relay_Set(Buzzer, buzzer);
     }
