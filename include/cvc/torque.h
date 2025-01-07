@@ -20,7 +20,7 @@
 #define LEFT_MOTOR_ENABLE 1   // Left motor enable bit
 #define RIGHT_MOTOR_ENABLE 1  // Right motor enable bit
 
-#define TORQUE_VECTORING_GAIN 0.25  // Gain for torque vectoring
+#define TORQUE_VECTORING_GAIN 0.70  // Gain for torque vectoring
 #define STEERING_POT_LEFT 0.51      // Left-most position of steering potentiometer
 #define STEERING_POT_RIGHT 4.03     // Right-most position of steering potentiometer
 
