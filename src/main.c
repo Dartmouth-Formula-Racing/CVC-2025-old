@@ -28,6 +28,7 @@
 #include <cvc/throttle.h>
 #include <cvc/statemachine.h>
 #include <cvc/torque.h>
+#include <cvc/misc.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -134,6 +135,7 @@ int main(void)
     CVC_StateMachine();
     Torque_CalculateAcceleration();
     Torque_CalculateTorque();
+    CVC_Cooling_Task();
 
     // Send CVC data to rest of vehicle
     CAN_BroadcastSafety();
@@ -166,7 +168,7 @@ void SystemClock_Config(void)
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 11;
+  RCC_OscInitStruct.HSICalibrationValue = 13;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 8;
@@ -444,7 +446,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : IMD_STATE_Pin BMS_STATE_Pin */
   GPIO_InitStruct.Pin = IMD_STATE_Pin|BMS_STATE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SENSE_12V_1_Pin SENSE_12V_2_Pin SENSE_12V_3_Pin SENSE_12V_4_Pin

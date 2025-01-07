@@ -24,8 +24,6 @@ void CVC_StateMachine() {
     volatile drive_state_t requested_drive_mode = CVC_data[DASH_REQUESTED_STATE];
     volatile bool air2 = false;
     volatile bool buzzer = false;
-    volatile bool battery_fans = false;
-    volatile bool pumps = false;
 
     volatile float HV_voltage = CVC_data[BMS_TOTAL_VOLTAGE] * 0.01;
     volatile float Inverter1_voltage = (float)((int16_t)CVC_data[INVERTER1_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
@@ -110,7 +108,6 @@ void CVC_StateMachine() {
                 break;
             }
 
-            // TODO: Implement wait for drive button press
             if (!drive_lockout && (requested_drive_mode == DRIVE || requested_drive_mode == REVERSE)) {
                 // Check if throttle is valid and not pressed
                 if (CVC_data[CVC_THROTTLE_VALID] && throttle <= MIN_RTD_THROTTLE) {
@@ -160,7 +157,6 @@ void CVC_StateMachine() {
                 state = CHARGING;
                 air2 = true;
             }
-            battery_fans = true;
             if (charging) {
                 state = CHARGING;
                 drive_lockout = true;
@@ -169,7 +165,7 @@ void CVC_StateMachine() {
             }
         case READY_TO_DRIVE:
             // Check if second contactor should be open
-            if (Inverter1_voltage < HV_voltage * MIN_PRECHARGE_PERCENT || Inverter2_voltage < HV_voltage * MIN_PRECHARGE_PERCENT) {
+            if (Inverter1_voltage < MIN_PRECHARGE_VOLTAGE || Inverter2_voltage < MIN_PRECHARGE_VOLTAGE) {
                 state = WAIT_FOR_PRECHARGE;
                 break;
             } else {
@@ -192,14 +188,13 @@ void CVC_StateMachine() {
 
             if (requested_drive_mode == NEUTRAL) {
                 state = NOT_READY_TO_DRIVE;
-            } else if (requested_drive_mode == DRIVE) {
+            } else if (requested_drive_mode == DRIVE && CVC_data[CVC_DRIVE_MODE] != REVERSE) {
                 drive_mode = DRIVE;
-                pumps = true;
-            } else if (requested_drive_mode == REVERSE) {
+            } else if (requested_drive_mode == REVERSE && CVC_data[CVC_DRIVE_MODE] != DRIVE) {
                 drive_mode = REVERSE;
-                pumps = true;
+            } else {
+                state = NOT_READY_TO_DRIVE;
             }
-
             break;
         default:
             state = WAIT_FOR_PRECHARGE;
@@ -209,8 +204,6 @@ void CVC_StateMachine() {
     CVC_data[CVC_STATE] = state;
     CVC_data[CVC_DRIVE_MODE] = drive_mode;
     Relay_Set(AIR2, air2);
-    Relay_Set(BatteryFans, battery_fans);
-    Relay_Set(Pumps, pumps);
     if (ENABLE_BUZZER) {
         Relay_Set(Buzzer, buzzer);
     }

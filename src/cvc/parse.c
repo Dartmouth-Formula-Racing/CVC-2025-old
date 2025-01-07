@@ -689,9 +689,6 @@ void CAN_Parse_Inverter_Temp3TorqueShudder(bool inverter) {
 
 // 01234567 89012345 67890123 45678901 23456789 01234567 89012345 67890123
 void CAN_Parse_Inverter_AnalogInputStatus(bool inverter) {
-    if (CAN_data_parsed[INVERTER1_AnalogInputStatus] && CAN_data_parsed[INVERTER2_AnalogInputStatus]) {
-        return;
-    }
     if (inverter == 0) {
         if (CAN_data_parsed[INVERTER1_AnalogInputStatus]) {
             return;

@@ -7,8 +7,8 @@
 #ifndef CVC_DATA_H
 #define CVC_DATA_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
     EMUS_OverallParameters,
@@ -75,25 +75,26 @@ typedef enum {
     CVC_THROTTLE_ADC,
     CVC_THROTTLE,
     CVC_THROTTLE_VALID,
-    CVC_DRIVE_MODE,         // 0 = neutral, 1 = drive, 2 = reverse
-    CVC_STATE,              // vehicle_state_t (state machine state)
-    CVC_LV_VOLTAGE,         // Low voltage system voltage
-    CVC_LEFT_TORQUE,        // Left motor torque
-    CVC_RIGHT_TORQUE,       // Right motor torque
-    CVC_TORQUE_LIMIT,       // Undervoltage protection torque limit
-    CVC_LEFT_DIRECTION,     // Left motor direction
-    CVC_RIGHT_DIRECTION,    // Right motor direction
-    CVC_PRECHARGE_BTN,      // Precharge button state
-    CVC_LV_CHARGE_STATE,    // LV charge state
-    CVC_AIR_1_STATE,        // Air 1 state
-    CVC_AIR_2_STATE,        // Air 2 state
-    CVC_DCDC_STATE,         // DCDC state
-    CVC_COCKPIT_BRB_STATE,  // Cockpit BRB state
-    CVC_BOT_STATE,          // BOT state
-    CVC_IMD_STATE,          // IMD state
-    CVC_BMS_STATE,          // BMS state
-    CVC_MAIN_LOOP_TIME,     // Main loop time (ms)
-    CVC_RX_QUEUE_SIZE,      // Number of unprocessed messages in RX queue
+    CVC_DRIVE_MODE,              // 0 = neutral, 1 = drive, 2 = reverse
+    CVC_STATE,                   // vehicle_state_t (state machine state)
+    CVC_LV_VOLTAGE,              // Low voltage system voltage
+    CVC_LEFT_TORQUE,             // Left motor torque
+    CVC_RIGHT_TORQUE,            // Right motor torque
+    CVC_INVERTER1_TORQUE_LIMIT,  // Undervoltage protection torque limit
+    CVC_INVERTER2_TORQUE_LIMIT,  // Undervoltage protection torque limit
+    CVC_LEFT_DIRECTION,          // Left motor direction
+    CVC_RIGHT_DIRECTION,         // Right motor direction
+    CVC_PRECHARGE_BTN,           // Precharge button state
+    CVC_LV_CHARGE_STATE,         // LV charge state
+    CVC_AIR_1_STATE,             // Air 1 state
+    CVC_AIR_2_STATE,             // Air 2 state
+    CVC_DCDC_STATE,              // DCDC state
+    CVC_COCKPIT_BRB_STATE,       // Cockpit BRB state
+    CVC_BOT_STATE,               // BOT state
+    CVC_IMD_STATE,               // IMD state
+    CVC_BMS_STATE,               // BMS state
+    CVC_MAIN_LOOP_TIME,          // Main loop time (ms)
+    CVC_RX_QUEUE_SIZE,           // Number of unprocessed messages in RX queue
     // === Front Sensor Board ==
     SENSOR_THROTTLE_ADC,
     SENSOR_STEERING_ANGLE,

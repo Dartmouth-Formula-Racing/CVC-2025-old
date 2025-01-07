@@ -36,8 +36,6 @@ typedef struct {
     uint8_t LVChargeControl : 1;
 } CVC_relay_state_t;
 
-extern CVC_relay_state_t CVC_RelayState;
-
 /**
  * @brief Configures relay driver.
  * @param None

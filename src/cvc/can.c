@@ -65,7 +65,7 @@ void CAN_Process_RX() {
     uint32_t count = 0;
 
     __disable_irq();
-    while (CANRxBuffer.head != CANRxBuffer.tail  && count < CAN_BUFFER_LENGTH) {
+    while (CANRxBuffer.head != CANRxBuffer.tail && count < CAN_BUFFER_LENGTH) {
         tempbuffer[count] = CANRxBuffer.buffer[CANRxBuffer.tail];
         CANRxBuffer.tail = (CANRxBuffer.tail + 1) % CAN_BUFFER_LENGTH;
         count++;
@@ -514,15 +514,17 @@ void CAN_BroadcastData() {
     }
     last = HAL_GetTick();
 
-    // CAN_Parse_Inverter_HighSpeedParameters(0);
-    // CAN_Parse_Inverter_HighSpeedParameters(1);
-    CAN_Parse_Inverter_MotorPositionParameters(0);
-    CAN_Parse_Inverter_MotorPositionParameters(1);
+    CAN_Parse_Inverter_HighSpeedParameters(0);
+    CAN_Parse_Inverter_HighSpeedParameters(1);
+    // CAN_Parse_Inverter_MotorPositionParameters(0);
+    // CAN_Parse_Inverter_MotorPositionParameters(1);
 
     // int16_t avg_rpm = (CVC_data[INVERTER1_MOTOR_SPEED_HS] / 2) + (CVC_data[INVERTER2_MOTOR_SPEED_HS] / 2);
     int16_t avg_rpm = 0;
-    int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED];
-    int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED];
+    // int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED];
+    // int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED];
+    int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
+    int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
     if (motor1_speed < 0) {
         motor1_speed = -motor1_speed;
     }
@@ -539,5 +541,25 @@ void CAN_BroadcastData() {
     tx_frame.data[1] = CVC_data[CVC_THROTTLE] & 0xFF;
     tx_frame.data[2] = (avg_rpm >> 8) & 0xFF;
     tx_frame.data[3] = avg_rpm & 0xFF;
+    CAN_Queue_TX(&tx_frame);
+}
+
+void CAN_BroadcastTorque() {
+    static uint32_t last = 0;
+    // magic numbers are great
+    if (HAL_GetTick() - last < 10) {
+        return;
+    }
+    last = HAL_GetTick();
+
+    CAN_Queue_Frame_t tx_frame;
+    tx_frame.Tx_header.IDE = CAN_ID_STD;
+    tx_frame.Tx_header.StdId = CAN_DASHBOARD_BASE_11 + 3;
+    tx_frame.Tx_header.RTR = CAN_RTR_DATA;
+    tx_frame.Tx_header.DLC = 8;
+    tx_frame.data[0] = (CVC_data[CVC_INVERTER1_TORQUE_LIMIT] >> 8) & 0xFF;
+    tx_frame.data[1] = CVC_data[CVC_INVERTER1_TORQUE_LIMIT] & 0xFF;
+    tx_frame.data[2] = (CVC_data[CVC_INVERTER2_TORQUE_LIMIT] >> 8) & 0xFF;
+    tx_frame.data[3] = CVC_data[CVC_INVERTER2_TORQUE_LIMIT] & 0xFF;
     CAN_Queue_TX(&tx_frame);
 }
