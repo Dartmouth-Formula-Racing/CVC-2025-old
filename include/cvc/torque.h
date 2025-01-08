@@ -9,7 +9,7 @@
 
 #include <cvc/data.h>
 
-#define TORQUE_PERIOD 10            // ms
+#define TORQUE_PERIOD 3             // ms
 #define NOMINAL_TORQUE 121          // Nm
 #define REVERSE_TORQUE_LIMIT 20.0   // Percentage of nominal torque (0.0 - 100.0)
 #define TORQUE_LIMIT 100.0          // Percentage of nominal torque (0.0 - 100.0)

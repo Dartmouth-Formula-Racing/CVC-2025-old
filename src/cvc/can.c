@@ -12,19 +12,21 @@
 #include <main.h>
 #include <stm32f7xx_hal_can.h>
 
-CircularBuffer CANRxBuffer;
-CircularBuffer CANTxBuffer;
+RxCircularBuffer CANRxBuffer;
+TxCircularBuffer CANTxBuffer;
 bool CANRxOverflow = false;
 bool Inverter1_Position_Flag = false;
 bool Inverter2_Position_Flag = false;
 bool Inverter1_Analog_Flag = false;
 bool Inverter2_Analog_Flag = false;
+bool Inverter1_HS_Flag = false;
+bool Inverter2_HS_Flag = false;
 extern CAN_HandleTypeDef hcan1;
 
 // CAN receive interrupt, stores received frame in receive FIFO
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     CAN_Queue_Frame_t rx_frame;
-    uint16_t next_head = (CANRxBuffer.head + 1) % CAN_BUFFER_LENGTH;
+    uint16_t next_head = (CANRxBuffer.head + 1) % CAN_RX_BUFFER_LENGTH;
     if (next_head != CANRxBuffer.tail) {  // Check for buffer full condition
         if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_frame.Rx_header, rx_frame.data) == HAL_OK) {
             __disable_irq();
@@ -42,7 +44,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 // CAN receive interrupt, stores received frame in receive FIFO
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     CAN_Queue_Frame_t rx_frame;
-    uint16_t next_head = (CANRxBuffer.head + 1) % CAN_BUFFER_LENGTH;
+    uint16_t next_head = (CANRxBuffer.head + 1) % CAN_RX_BUFFER_LENGTH;
     if (next_head != CANRxBuffer.tail) {  // Check for buffer full condition
         if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &rx_frame.Rx_header, rx_frame.data) == HAL_OK) {
             __disable_irq();
@@ -61,13 +63,13 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 // Empties receive FIFO when called
 void CAN_Process_RX() {
     CAN_Queue_Frame_t rx_frame;
-    CAN_Queue_Frame_t tempbuffer[CAN_BUFFER_LENGTH];
+    CAN_Queue_Frame_t tempbuffer[CAN_RX_BUFFER_LENGTH];
     uint32_t count = 0;
 
     __disable_irq();
-    while (CANRxBuffer.head != CANRxBuffer.tail && count < CAN_BUFFER_LENGTH) {
+    while (CANRxBuffer.head != CANRxBuffer.tail && count < CAN_RX_BUFFER_LENGTH) {
         tempbuffer[count] = CANRxBuffer.buffer[CANRxBuffer.tail];
-        CANRxBuffer.tail = (CANRxBuffer.tail + 1) % CAN_BUFFER_LENGTH;
+        CANRxBuffer.tail = (CANRxBuffer.tail + 1) % CAN_RX_BUFFER_LENGTH;
         count++;
     }
     __enable_irq();
@@ -98,7 +100,7 @@ void CAN_Process_TX() {
         if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) > 0) {
             uint32_t tx_mailbox;
             HAL_CAN_AddTxMessage(&hcan1, &tx_frame.Tx_header, tx_frame.data, &tx_mailbox);
-            CANTxBuffer.tail = (CANTxBuffer.tail + 1) % CAN_BUFFER_LENGTH;
+            CANTxBuffer.tail = (CANTxBuffer.tail + 1) % CAN_TX_BUFFER_LENGTH;
             send_timer = false;
             last_send = HAL_GetTick();
         } else {
@@ -106,7 +108,7 @@ void CAN_Process_TX() {
                 send_timer = true;
             } else if (HAL_GetTick() - last_send > CAN_MAX_SEND_TIME) {
                 // Dump message if it's been in the queue too long
-                CANTxBuffer.tail = (CANTxBuffer.tail + 1) % CAN_BUFFER_LENGTH;
+                CANTxBuffer.tail = (CANTxBuffer.tail + 1) % CAN_TX_BUFFER_LENGTH;
                 send_timer = false;
                 last_send = HAL_GetTick();
                 // Clear TX mailboxes
@@ -117,7 +119,7 @@ void CAN_Process_TX() {
 }
 
 void CAN_Queue_TX(CAN_Queue_Frame_t *tx_frame) {
-    uint16_t next_head = (CANTxBuffer.head + 1) % CAN_BUFFER_LENGTH;
+    uint16_t next_head = (CANTxBuffer.head + 1) % CAN_TX_BUFFER_LENGTH;
     if (next_head != CANTxBuffer.tail) {
         CANTxBuffer.buffer[CANTxBuffer.head] = *tx_frame;
         CANTxBuffer.head = next_head;
@@ -155,6 +157,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID1_11 + 5))) {
                 CAN_data[INVERTER1_MotorPositionParameters] = data64;
                 CAN_data_parsed[INVERTER1_MotorPositionParameters] = false;
+                Inverter1_Position_Flag = true;
             } else if (id == ((CAN_INVERTER_BASE_ID1_11 + 6))) {
                 CAN_data[INVERTER1_CurrentParameters] = data64;
                 CAN_data_parsed[INVERTER1_CurrentParameters] = false;
@@ -188,7 +191,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID1_11 + 16))) {
                 CAN_data[INVERTER1_HighSpeedParameters] = data64;
                 CAN_data_parsed[INVERTER1_HighSpeedParameters] = false;
-                Inverter1_Position_Flag = true;
+                Inverter1_HS_Flag = true;
             } else if (id == ((CAN_INVERTER_BASE_ID1_11 + 17))) {
                 CAN_data[INVERTER1_TorqueCapability] = data64;
                 CAN_data_parsed[INVERTER1_TorqueCapability] = false;
@@ -211,6 +214,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID2_11 + 5))) {
                 CAN_data[INVERTER2_MotorPositionParameters] = data64;
                 CAN_data_parsed[INVERTER2_MotorPositionParameters] = false;
+                Inverter2_Position_Flag = true;
             } else if (id == ((CAN_INVERTER_BASE_ID2_11 + 6))) {
                 CAN_data[INVERTER2_CurrentParameters] = data64;
                 CAN_data_parsed[INVERTER2_CurrentParameters] = false;
@@ -244,7 +248,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID2_11 + 16))) {
                 CAN_data[INVERTER2_HighSpeedParameters] = data64;
                 CAN_data_parsed[INVERTER2_HighSpeedParameters] = false;
-                Inverter2_Position_Flag = true;
+                Inverter2_HS_Flag = true;
             }
         }
 
@@ -388,6 +392,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID1_29 + 5))) {
                 CAN_data[INVERTER1_MotorPositionParameters] = data64;
                 CAN_data_parsed[INVERTER1_MotorPositionParameters] = false;
+                Inverter1_Position_Flag = true;
             } else if (id == ((CAN_INVERTER_BASE_ID1_29 + 6))) {
                 CAN_data[INVERTER1_CurrentParameters] = data64;
                 CAN_data_parsed[INVERTER1_CurrentParameters] = false;
@@ -421,7 +426,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID1_29 + 16))) {
                 CAN_data[INVERTER1_HighSpeedParameters] = data64;
                 CAN_data_parsed[INVERTER1_HighSpeedParameters] = false;
-                Inverter1_Position_Flag = true;
+                Inverter1_HS_Flag = true;
             } else if (id == ((CAN_INVERTER_BASE_ID1_29 + 17))) {
                 CAN_data[INVERTER1_TorqueCapability] = data64;
                 CAN_data_parsed[INVERTER1_TorqueCapability] = false;
@@ -444,6 +449,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID2_29 + 5))) {
                 CAN_data[INVERTER2_MotorPositionParameters] = data64;
                 CAN_data_parsed[INVERTER2_MotorPositionParameters] = false;
+                Inverter2_Position_Flag = true;
             } else if (id == ((CAN_INVERTER_BASE_ID2_29 + 6))) {
                 CAN_data[INVERTER2_CurrentParameters] = data64;
                 CAN_data_parsed[INVERTER2_CurrentParameters] = false;
@@ -477,7 +483,7 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             } else if (id == ((CAN_INVERTER_BASE_ID2_29 + 16))) {
                 CAN_data[INVERTER2_HighSpeedParameters] = data64;
                 CAN_data_parsed[INVERTER2_HighSpeedParameters] = false;
-                Inverter2_Position_Flag = true;
+                Inverter2_HS_Flag = true;
             }
         }
     }
@@ -502,8 +508,8 @@ void CAN_BroadcastSafety() {
     tx_frame.data[4] = CVC_data[CVC_BOT_STATE];
     tx_frame.data[5] = CVC_data[CVC_COCKPIT_BRB_STATE];
     tx_frame.data[6] = CANRxOverflow;
-    // tx_frame.data[7] = CVC_data[CVC_MAIN_LOOP_TIME];
-    tx_frame.data[7] = CVC_data[CVC_RX_QUEUE_SIZE];
+    tx_frame.data[7] = CVC_data[CVC_MAIN_LOOP_TIME];
+    // tx_frame.data[7] = CVC_data[CVC_RX_QUEUE_SIZE];
     CAN_Queue_TX(&tx_frame);
 }
 
@@ -523,8 +529,10 @@ void CAN_BroadcastData() {
     int16_t avg_rpm = 0;
     // int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED];
     // int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED];
-    int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
-    int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
+    // int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
+    // int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
+    int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED];
+    int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED];
     if (motor1_speed < 0) {
         motor1_speed = -motor1_speed;
     }
@@ -544,13 +552,16 @@ void CAN_BroadcastData() {
     CAN_Queue_TX(&tx_frame);
 }
 
-void CAN_BroadcastTorque() {
+void CAN_BroadcastDebug() {
     static uint32_t last = 0;
     // magic numbers are great
-    if (HAL_GetTick() - last < 10) {
+    if (HAL_GetTick() - last < 3) {
         return;
     }
     last = HAL_GetTick();
+
+    CAN_Parse_Inverter_HighSpeedParameters(0);
+    CAN_Parse_Inverter_HighSpeedParameters(1);
 
     CAN_Queue_Frame_t tx_frame;
     tx_frame.Tx_header.IDE = CAN_ID_STD;
@@ -561,5 +572,9 @@ void CAN_BroadcastTorque() {
     tx_frame.data[1] = CVC_data[CVC_INVERTER1_TORQUE_LIMIT] & 0xFF;
     tx_frame.data[2] = (CVC_data[CVC_INVERTER2_TORQUE_LIMIT] >> 8) & 0xFF;
     tx_frame.data[3] = CVC_data[CVC_INVERTER2_TORQUE_LIMIT] & 0xFF;
+    tx_frame.data[4] = (CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] >> 8) & 0xFF;
+    tx_frame.data[5] = CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] & 0xFF;
+    tx_frame.data[6] = (CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] >> 8) & 0xFF;
+    tx_frame.data[7] = CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] & 0xFF;
     CAN_Queue_TX(&tx_frame);
 }
