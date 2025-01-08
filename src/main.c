@@ -29,6 +29,7 @@
 #include <cvc/statemachine.h>
 #include <cvc/torque.h>
 #include <cvc/misc.h>
+#include <cvc/filter.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,6 +112,7 @@ int main(void)
   Analog_Configure();
   Relay_Enable();
   Relay_Set(BrakeLight, 1);
+  Filter_InitializeFilters();
 
   uint32_t last_time = 0;
   /* USER CODE END 2 */
@@ -130,6 +132,7 @@ int main(void)
     CAN_Process_RX();
 
     // Use new data to make vehicle control decisions
+    Filter_ProcessFilterTask();
     Torque_CalculateAvailableTorque();
     Throttle_ProcessThrottle();
     CVC_StateMachine();
@@ -141,6 +144,7 @@ int main(void)
     Torque_ClearFaults();
     CAN_BroadcastSafety();
     CAN_BroadcastData();
+    CAN_BroadcastDebug();
     Torque_SendTorque();
     CAN_Process_TX();
     Relay_Send();

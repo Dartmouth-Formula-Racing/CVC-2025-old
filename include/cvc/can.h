@@ -11,7 +11,8 @@
 #include <stdint.h>
 #include <stm32f7xx_hal_can.h>
 
-#define CAN_BUFFER_LENGTH 64
+#define CAN_RX_BUFFER_LENGTH 128
+#define CAN_TX_BUFFER_LENGTH 16
 #define CAN_MAX_SEND_TIME 10 // ms
 
 #define CAN_EMUS_USE_EXT 0       // 1 if using extended IDs, 0 if using standard IDs
@@ -44,6 +45,9 @@ extern bool Inverter1_Position_Flag;
 extern bool Inverter2_Position_Flag;
 extern bool Inverter1_Analog_Flag;
 extern bool Inverter2_Analog_Flag;
+extern bool Inverter1_HS_Flag;
+extern bool Inverter2_HS_Flag;
+
 
 /* Struct to hold messages used in CAN message queues */
 typedef struct
@@ -57,10 +61,15 @@ typedef struct
 
 /* Circular buffer for CAN message queues */
 typedef struct {
-    volatile CAN_Queue_Frame_t buffer[CAN_BUFFER_LENGTH];
+    volatile CAN_Queue_Frame_t buffer[CAN_RX_BUFFER_LENGTH];
     volatile uint16_t head;
     volatile uint16_t tail;
-} CircularBuffer;
+} RxCircularBuffer;
+typedef struct {
+    volatile CAN_Queue_Frame_t buffer[CAN_TX_BUFFER_LENGTH];
+    volatile uint16_t head;
+    volatile uint16_t tail;
+} TxCircularBuffer;
 
 void CAN_Queue_TX(CAN_Queue_Frame_t *tx_frame);
 void CAN_Process_TX(void);
@@ -68,5 +77,6 @@ void CAN_Process_RX(void);
 void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64);
 void CAN_BroadcastSafety(void);
 void CAN_BroadcastData(void);
+void CAN_BroadcastDebug(void);
 
 #endif  // CVC_CAN_H

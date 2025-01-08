@@ -36,7 +36,7 @@ void CAN_Parse_EMUS_OverallParameters() {
     for (uint8_t i = 0; i < 8; i++) {
         data[i] = (CAN_data[EMUS_OverallParameters] >> (i * 8)) & 0xFF;
     }
-    
+
     // Byte 0: Input signals
     // Bit 0: Ignition key
     // Bit 1: Charger mains
@@ -150,7 +150,7 @@ void CAN_Parse_EMUS_DiagnosticCodes() {
     CVC_data[BMS_LIVE_CELL_COUNT_VALID] = (data[4] >> 3) & 0x01;
     CVC_data[BMS_CHARGING_FINISHED] = (data[4] >> 4) & 0x01;
     CVC_data[BMS_CELL_TEMP_VALID] = (data[4] >> 5) & 0x01;
-    
+
     CAN_data_parsed[EMUS_DiagnosticCodes] = true;
 }
 
@@ -633,7 +633,6 @@ void CAN_Parse_Inverter_Temp2(bool inverter) {
         CVC_data[INVERTER1_STALL_BURST_MODEL_TEMP] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_Temp2] = true;
     }
-
 }
 
 /**
@@ -678,7 +677,6 @@ void CAN_Parse_Inverter_Temp3TorqueShudder(bool inverter) {
         CVC_data[INVERTER2_TORQUE_SHUDDER] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_Temp3TorqueShudder] = true;
     }
-
 }
 
 /**
@@ -826,7 +824,6 @@ void CAN_Parse_Inverter_MotorPositionParameters(bool inverter) {
         CVC_data[INVERTER2_DELTA_RESOLVER_FILTERED] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_MotorPositionParameters] = true;
     }
-
 }
 
 /**
@@ -871,7 +868,6 @@ void CAN_Parse_Inverter_CurrentParameters(bool inverter) {
         CVC_data[INVERTER2_DC_BUS_CURRENT] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_CurrentParameters] = true;
     }
-
 }
 
 /**
@@ -918,7 +914,6 @@ void CAN_Parse_Inverter_VoltageParameters(bool inverter) {
         CVC_data[INVERTER2_VAB_VQ_VOLTAGE] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_VoltageParameters] = true;
     }
-
 }
 
 /**
@@ -963,7 +958,6 @@ void CAN_Parse_Inverter_FluxParameters(bool inverter) {
         CVC_data[INVERTER2_IQ_CURRENT] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_FluxParameters] = true;
     }
-
 }
 
 /**
@@ -1008,7 +1002,6 @@ void CAN_Parse_Inverter_InternalVoltageParameters(bool inverter) {
         CVC_data[INVERTER2_12_0_REFERENCE_VOLTAGE] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_InternalVoltageParameters] = true;
     }
-
 }
 
 /**
@@ -1151,7 +1144,6 @@ void CAN_Parse_Inverter_InternalStateParameters(bool inverter) {
         CVC_data[INVERTER2_LIMIT_STALL_BURST_MODEL] = (data[6] >> 7) & 0x01;
         CAN_data_parsed[INVERTER2_InternalStateParameters] = true;
     }
-
 }
 
 /**
@@ -1196,7 +1188,6 @@ void CAN_Parse_Inverter_FaultCodes(bool inverter) {
         CVC_data[INVERTER2_RUN_FAULT_HI] = (data[7] << 8) | data[6];
         CAN_data_parsed[INVERTER2_FaultCodes] = true;
     }
-
 }
 /**
  * @brief Parses Inverter 29-bit High Speed CAN message. (0x0B0)
