@@ -138,6 +138,7 @@ int main(void)
     CVC_Cooling_Task();
 
     // Send CVC data to rest of vehicle
+    Torque_ClearFaults();
     CAN_BroadcastSafety();
     CAN_BroadcastData();
     Torque_SendTorque();
