@@ -19,7 +19,10 @@ notchfilter_t left_motor_16;
 notchfilter_t right_motor_10;
 notchfilter_t right_motor_16;
 
-sample_window window = {0,0}; // Initialize sample window with all speeds = 0 and sample count = 0
+sample_window window = {
+    .data_array = {0}, // Initializes all array elements to 0
+    .sample_count = 0
+}; // Initialize sample window with all speeds = 0 and sample count = 0
 
 // Function to set up a rolling average filter
 int16_t Roll_average(sample_window* window, float new_speed){
