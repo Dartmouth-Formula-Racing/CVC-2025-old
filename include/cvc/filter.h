@@ -11,7 +11,17 @@
 #include <stdbool.h>
 
 #define PI 3.1415926536
+#define WINDOW_SIZE 4
+#define FILTER_TYPE 0
+#define RPM_SCALE_FACTOR 1000
 
+// Window struct to store an array of size WINDOW_SIZE and a position indicator
+typedef struct {
+    float data_array[WINDOW_SIZE];
+    uint32_t sample_count;
+} sample_window;
+
+// Notchfilter struct to store relevant fields for notch filtering
 typedef struct {
     float omega;
     float alpha;
@@ -37,6 +47,8 @@ extern bool Inverter2_FilteredSpeed_Flag;
 void Filter_InitializeNotch(notchfilter_t* filter, uint16_t samplerate, uint16_t center, uint16_t bandwidth);
 
 int16_t Filter_ProcessNotch(notchfilter_t* filter, int16_t sample);
+
+int16_t Roll_average(sample_window* window, float new_speed);
 
 void Filter_InitializeFilters(void);
 

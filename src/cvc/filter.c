@@ -10,6 +10,7 @@
 #include <cvc/filter.h>
 #include <math.h>
 
+
 bool Inverter1_FilteredSpeed_Flag = false;
 bool Inverter2_FilteredSpeed_Flag = false;
 
@@ -17,6 +18,22 @@ notchfilter_t left_motor_10;
 notchfilter_t left_motor_16;
 notchfilter_t right_motor_10;
 notchfilter_t right_motor_16;
+
+sample_window window = {0,0}; // Initialize sample window with all speeds = 0 and sample count = 0
+
+// Function to set up a rolling average filter
+int16_t Roll_average(sample_window* window, float new_speed){
+    window-> data_array[window->sample_count] = new_speed;
+    window->sample_count = (window->sample_count + 1) % WINDOW_SIZE; // Move position indicator on window index
+
+    // Average values in the sample window
+    int sum = 0;
+    for (int i = 0; i < WINDOW_SIZE; i++) {
+        sum += window->data_array[i];
+    }
+    // Increase precision of by multiplying and dividing by 1000
+    return (int16_t)(RPM_SCALE_FACTOR * (sum / WINDOW_SIZE));
+}
 
 void Filter_InitializeNotch(notchfilter_t* filter, uint16_t samplerate, uint16_t center, uint16_t bandwidth) {
     // Solve for coefficients
@@ -69,12 +86,31 @@ void Filter_InitializeFilters() {
     Filter_InitializeNotch(&right_motor_16, 333, 16, 6);
 }
 
+// Define which filtering is used
+#if FILTER_TYPE == 0
+    void Filter_ProcessFilterTask() {
+    if (Inverter1_HS_Flag) {
+        int16_t rpm = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
+        int16_t filtered = Roll_average(&window, rpm);
+        CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] = filtered; // Update CVC_data with left inverter filtered speed (RPM)
+        Inverter1_HS_Flag = false;
+        Inverter1_FilteredSpeed_Flag = true;
+    }
+    if (Inverter2_HS_Flag) {
+        int16_t rpm = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
+        int16_t filtered = Roll_average(&window, rpm);
+        CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] = filtered; // Update CVC_data with right inverter filtered speed (RPM)
+        Inverter2_HS_Flag = false;
+        Inverter2_FilteredSpeed_Flag = true;
+    }
+}
+#else if FILTER_TYPE == 1
 void Filter_ProcessFilterTask() {
     if (Inverter1_HS_Flag) {
         int16_t rpm = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
         int16_t filtered = Filter_ProcessNotch(&left_motor_10, rpm);
         filtered = Filter_ProcessNotch(&left_motor_16, filtered);
-        CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] = (uint16_t)filtered;
+        CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] = (uint16_t)filtered; // Update CVC_data with left inverter filtered speed (RPM)
         Inverter1_HS_Flag = false;
         Inverter1_FilteredSpeed_Flag = true;
     }
@@ -82,8 +118,9 @@ void Filter_ProcessFilterTask() {
         int16_t rpm = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
         int16_t filtered = Filter_ProcessNotch(&right_motor_10, rpm);
         filtered = Filter_ProcessNotch(&right_motor_16, filtered);
-        CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] = (uint16_t)filtered;
+        CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] = (uint16_t)filtered; // Update CVC_data with right inverter filtered speed (RPM)
         Inverter2_HS_Flag = false;
         Inverter2_FilteredSpeed_Flag = true;
     }
 }
+#endif

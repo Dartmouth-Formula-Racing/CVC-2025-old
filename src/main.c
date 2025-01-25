@@ -147,8 +147,6 @@ int main(void)
     Torque_SendTorque();
     CAN_Process_TX();
     Relay_Send();
-    /* USER CODE END WHILE */
-    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
