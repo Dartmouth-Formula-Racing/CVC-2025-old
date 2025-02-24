@@ -112,7 +112,7 @@ int main(void)
   Analog_Configure();
   Relay_Enable();
   Relay_Set(BrakeLight, 1);
-  Filter_InitializeFilters();
+  // Filter_InitializeFilters();
 
   uint32_t last_time = 0;
   /* USER CODE END 2 */
@@ -130,6 +130,7 @@ int main(void)
     Analog_ReadLV();
     CVC_12V_ReadAll();
     CAN_Process_RX();
+    CAN_Parse_SensorBoard_FilteredSpeeds();
 
     // Use new data to make vehicle control decisions
     Filter_ProcessFilterTask();
@@ -143,7 +144,9 @@ int main(void)
     // Send CVC data to rest of vehicle
     CAN_BroadcastSafety();
     CAN_BroadcastData();
-    CAN_BroadcastDebug();
+    CAN_BroadcastFilteredSpeeds();
+    calculate_slip_ratio();
+    CAN_BroadcastSlipRatio();
     Torque_SendTorque();
     CAN_Process_TX();
     Relay_Send();

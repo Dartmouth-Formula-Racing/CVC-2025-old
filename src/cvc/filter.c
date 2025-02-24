@@ -19,23 +19,30 @@ notchfilter_t left_motor_16;
 notchfilter_t right_motor_10;
 notchfilter_t right_motor_16;
 
-sample_window window = {
+// Initialize both sample windows for rolling average filter
+sample_window window_left = {
     .data_array = {0}, // Initializes all array elements to 0
-    .sample_count = 0
+    .position = 0
 }; // Initialize sample window with all speeds = 0 and sample count = 0
 
-// Function to set up a rolling average filter
-int16_t Roll_average(sample_window* window, float new_speed){
-    window-> data_array[window->sample_count] = new_speed;
-    window->sample_count = (window->sample_count + 1) % WINDOW_SIZE; // Move position indicator on window index
+sample_window window_right = {
+    .data_array = {0}, // Initializes all array elements to 0
+    .position = 0
+}; // Initialize sample window with all speeds = 0 and sample count = 0
+
+
+/* Function to calculate a rolling average and update "sample window" values */
+int32_t Roll_average(sample_window* window, int32_t new_speed){
+    window-> data_array[window->position] = new_speed;
+    window->position = (window->position + 1) % WINDOW_SIZE; // Move position indicator on window index
 
     // Average values in the sample window
     int sum = 0;
     for (int i = 0; i < WINDOW_SIZE; i++) {
         sum += window->data_array[i];
     }
-    // Increase precision of by multiplying and dividing by 1000
-    return (int16_t)(RPM_SCALE_FACTOR * (sum / WINDOW_SIZE));
+    // Increase precision of RPM value by multiplying by RPM_SCALE_FACTOR before casting to integer
+    return (int32_t)((RPM_SCALE_FACTOR * sum) / WINDOW_SIZE);
 }
 
 void Filter_InitializeNotch(notchfilter_t* filter, uint16_t samplerate, uint16_t center, uint16_t bandwidth) {
@@ -93,15 +100,15 @@ void Filter_InitializeFilters() {
 #if FILTER_TYPE == 0
     void Filter_ProcessFilterTask() {
     if (Inverter1_HS_Flag) {
-        int16_t rpm = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
-        int16_t filtered = Roll_average(&window, rpm);
+        int32_t rpm = (int32_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
+        int32_t filtered = Roll_average(&window_left, rpm);
         CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] = filtered; // Update CVC_data with left inverter filtered speed (RPM)
         Inverter1_HS_Flag = false;
         Inverter1_FilteredSpeed_Flag = true;
     }
     if (Inverter2_HS_Flag) {
-        int16_t rpm = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
-        int16_t filtered = Roll_average(&window, rpm);
+        int32_t rpm = (int32_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
+        int32_t filtered = Roll_average(&window_right, rpm);
         CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] = filtered; // Update CVC_data with right inverter filtered speed (RPM)
         Inverter2_HS_Flag = false;
         Inverter2_FilteredSpeed_Flag = true;

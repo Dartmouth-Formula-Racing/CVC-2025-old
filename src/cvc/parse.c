@@ -525,28 +525,46 @@ void CAN_Parse_VDM_YawRateData() {
  * @param frame: A CAN frame containing 8 bytes of data to be parsed.
  * @retval None
  */
-void CAN_Parse_SensorBoard() {
-    if (CAN_data_parsed[SENSORBOARD_Data]) {
+void CAN_Parse_SensorBoard_RawSpeeds() {
+    if (CAN_data_parsed[SENSOR_WheelSpeed_Raw]) {
         return;
     }
     uint8_t data[8] = {0};
     for (uint8_t i = 0; i < 8; i++) {
-        data[i] = (CAN_data[SENSORBOARD_Data] >> (i * 8)) & 0xFF;
+        data[i] = (CAN_data[SENSOR_WheelSpeed_Raw] >> (i * 8)) & 0xFF;
     }
 
-    // Byte 0, 1: Right Wheel RPM
-    CVC_data[SENSOR_RIGHT_WHEELSPEED] = data[0] | (data[1] << 8);
-    // Byte 2, 3: Left Wheel RPM
-    CVC_data[SENSOR_LEFT_WHEELSPEED] = data[2] | (data[3] << 8);
-    // Byte 4: Brake Pressure
-    CVC_data[SENSOR_BRAKESWITCH] = data[4];
-    // Byte 5: Steering Angle
-    CVC_data[SENSOR_STEERING_ANGLE] = data[5];
-    // Byte 6, 7: Throttle Position
-    CVC_data[SENSOR_THROTTLE_ADC] = data[6] | (data[7] << 8);
+    // Byte 0 - 3: Right Wheel  RPM
+    CVC_data[SENSOR_LEFT_WHEELSPEED_RAW] = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+    // Byte 4-7: Left Wheel RPM
+    CVC_data[SENSOR_RIGHT_WHEELSPEED_RAW] = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
 
-    CAN_data_parsed[SENSORBOARD_Data] = true;
+    CAN_data_parsed[SENSOR_WheelSpeed_Raw] = true;
 }
+
+
+/**
+ * @brief Parse Sensor Board CAN messages.
+ * @param frame: A CAN frame containing 8 bytes of data to be parsed.
+ * @retval None
+ */
+void CAN_Parse_SensorBoard_FilteredSpeeds() {
+    if (CAN_data_parsed[SENSOR_WheelSpeed_Filtered]) {
+        return;
+    }
+    uint8_t data[8] = {0};
+    for (uint8_t i = 0; i < 8; i++) {
+        data[i] = (CAN_data[SENSOR_WheelSpeed_Filtered] >> (i * 8)) & 0xFF;
+    }
+
+    // Byte 0 - 3: Right Wheel filtered RPM
+    CVC_data[SENSOR_LEFT_WHEELSPEED] = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+    // Byte 4-7: Left Wheel filtered RPM
+    CVC_data[SENSOR_RIGHT_WHEELSPEED] = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
+
+    CAN_data_parsed[SENSOR_WheelSpeed_Filtered] = true;
+}
+
 
 /**
  * @brief Parses Inverter 29-bit Temperatures #1 CAN message. (0)
