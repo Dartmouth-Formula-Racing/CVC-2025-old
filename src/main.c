@@ -110,7 +110,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   Analog_Configure();
   Relay_Enable();
-  Relay_Set(BrakeLight, 1);
 
   uint32_t last_time = 0;
   /* USER CODE END 2 */
@@ -136,6 +135,7 @@ int main(void)
     Torque_CalculateAcceleration();
     Torque_CalculateTorque();
     CVC_Cooling_Task();
+    CVC_BrakeLight_Task();
 
     // Send CVC data to rest of vehicle
     Torque_ClearFaults();
