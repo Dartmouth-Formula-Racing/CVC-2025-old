@@ -1,136 +1,155 @@
 /*
  * filter.c
  *
- * Created on January 7, 2025
- * Andrei Gerashchenko
+ * Created on February 10, 2025
+ * Sasha Ries
  */
 
 #include <cvc/can.h>
 #include <cvc/data.h>
 #include <cvc/filter.h>
 #include <math.h>
+#include <stdint.h>
 
 
 bool Inverter1_FilteredSpeed_Flag = false;
 bool Inverter2_FilteredSpeed_Flag = false;
 
-notchfilter_t left_motor_10;
-notchfilter_t left_motor_16;
-notchfilter_t right_motor_10;
-notchfilter_t right_motor_16;
+IIR_filter left_IIR;
+IIR_filter right_IIR;
+ 
+ /* --------------------------------------- Declare Global Variables and Local Functions -----------------------------------*/
+ static float FIR_impulse_response[FILTER_LENGTH] = {};
+ 
+ /* These values calculated in a seperate MATLAB script */
 
-// Initialize both sample windows for rolling average filter
-sample_window window_left = {
-    .data_array = {0}, // Initializes all array elements to 0
-    .position = 0
-}; // Initialize sample window with all speeds = 0 and sample count = 0
+ // b coefficients (numerator)
+static float IIR_raw_impulse[FILTER_LENGTH + 1] = {0.14410393, -0.419203, 0.27539719, 0.27539719, -0.419203, 0.14410393};
 
-sample_window window_right = {
-    .data_array = {0}, // Initializes all array elements to 0
-    .position = 0
-}; // Initialize sample window with all speeds = 0 and sample count = 0
-
-
-/* Function to calculate a rolling average and update "sample window" values */
-int32_t Roll_average(sample_window* window, int32_t new_speed){
-    window-> data_array[window->position] = new_speed;
-    window->position = (window->position + 1) % WINDOW_SIZE; // Move position indicator on window index
-
-    // Average values in the sample window
-    int sum = 0;
-    for (int i = 0; i < WINDOW_SIZE; i++) {
-        sum += window->data_array[i];
+// a coefficients (denominator, excluding a[0] which is normalized to 1)
+static float IIR_filtered_impulse[FILTER_LENGTH] = {-4.38041597, 7.73480352, -6.8718419, 3.06679259, -0.548742};
+ 
+ 
+/* ----------------------------------------------------- IIR Filter -----------------------------------------------------*/
+void IIR_filter_init(IIR_filter* filter){
+    // Zero out all raw sample buffer values
+    for (uint8_t n = 0; n < FILTER_LENGTH + 1; n++){
+        filter->raw[n] = 0.0f;
     }
-    // Increase precision of RPM value by multiplying by RPM_SCALE_FACTOR before casting to integer
-    return (int32_t)((RPM_SCALE_FACTOR * sum) / WINDOW_SIZE);
+
+    // Zero out all filtered sample buffer values
+    for (uint8_t n = 0; n < FILTER_LENGTH; n++){
+        filter->filtered[n] = 0.0f;
+    }
+
+    filter->raw_index = 0;      // Reset raw buffer index
+    filter->filtered_index = 0;  // Reset filtered buffer index
+    filter->output = 0.0f;      // Clear filter output
 }
 
-void Filter_InitializeNotch(notchfilter_t* filter, uint16_t samplerate, uint16_t center, uint16_t bandwidth) {
-    // Solve for coefficients
-    filter->omega = 2.0 * PI * center / samplerate;
-    filter->alpha = sin(filter->omega) * sinh(log(2.0) / 2.0 * bandwidth * filter->omega / sin(filter->omega));
-    filter->a0 = 1.0 + filter->alpha;
-    filter->a1 = -2.0 * cos(filter->omega);
-    filter->a2 = 1.0 - filter->alpha;
-    filter->b0 = 1.0;
-    filter->b1 = -2.0 * cos(filter->omega);
-    filter->b2 = 1.0;
+float IIR_filter_update(IIR_filter* filter, int32_t input){
+    // Add new input to raw buffer at current index position
+    filter->raw[filter->raw_index] = input;
+    filter->raw_index++;
+    
+    // Reset index to 0 when it reaches end of buffer (circular buffer implementation)
+    if (filter->raw_index == FILTER_LENGTH + 1){
+        filter->raw_index = 0;
+    }
 
-    // Normalize coefficients
-    filter->a1 = filter->a1 / filter->a0;
-    filter->a2 = filter->a2 / filter->a0;
-    filter->b0 = filter->b0 / filter->a0;
-    filter->b1 = filter->b1 / filter->a0;
-    filter->b2 = filter->b2 / filter->a0;
+    // Store previous output in filtered buffer
+    filter->filtered[filter->filtered_index] = filter->output;
+    filter->filtered_index++;
+    
+    // Reset index to 0 when it reaches end of buffer
+    if (filter->filtered_index == FILTER_LENGTH){
+        filter->filtered_index = 0;
+    }
 
-    // Initialize state variables
-    filter->x1 = 0.0;
-    filter->y1 = 0.0;
-    filter->x2 = 0.0;
-    filter->y2 = 0.0;
+    filter->output = 0.0f;  // Initialize filtered output sum
+    
+    // Process b coefficients (FIR portion) - traverse buffer in reverse chronological order
+    uint8_t sumIndex = filter->raw_index;
+    for (uint8_t n = 0; n < FILTER_LENGTH + 1; n++){ // Move backward through circular buffer
+        if (sumIndex > 0){
+            sumIndex--;
+        }else{
+            sumIndex = FILTER_LENGTH;  // Wrap around to end of buffer
+        }
+        // Standard FIR computation: b[n] * x[n-i]
+        filter->output += IIR_raw_impulse[n] * filter->raw[sumIndex];
+    }
+
+    // Process a coefficients (IIR feedback portion) - traverse buffer in reverse order
+    sumIndex = filter->filtered_index;
+    for (uint8_t n = 0; n < FILTER_LENGTH; n++){ // Move backward through circular buffer
+        if (sumIndex > 0){
+            sumIndex--;
+        }else{
+            sumIndex = FILTER_LENGTH - 1;  // Wrap around to end of buffer
+        }
+        // Standard IIR computation: a[n] * y[n-i]
+        filter->output -= IIR_filtered_impulse[n] * filter->filtered[sumIndex];
+    }
+    return filter->output;
 }
 
-int16_t Filter_ProcessNotch(notchfilter_t* filter, int16_t sample) {
-    // Compute the new output
-    float b0 = filter->b0 * sample;
-    float b1 = filter->b1 * filter->x1;
-    float b2 = filter->b2 * filter->x2;
-    float a1 = filter->a1 * filter->y1;
-    float a2 = filter->a2 * filter->y2;
-    float out = b0 + b1 + b2 - a1 - a2;
 
-    // Update state variables
-    filter->x2 = filter->x1;
-    filter->x1 = sample;
-    filter->y2 = filter->y1;
-    filter->y1 = out;
+/* ----------------------------------------------------------- FIR Filter ---------------------------------------------- */
+void FIR_filter_init(FIR_filter* filter){
+    // Set all buffer values to zero
+    for (uint8_t n = 0; n < FILTER_LENGTH; n++){
+        filter->buffer[n] = 0.0f;
+    }
 
-    return (int16_t)out;
+    filter->buffer_index = 0;  // Initialize index to start of buffer
+    filter->output = 0.0f;     // Clear output value
 }
 
-void Filter_InitializeFilters() {
-    // Datalogging shows that most of our oscillations are at 10 and 16 Hz
-    Filter_InitializeNotch(&left_motor_10, 333, 10, 6);
-    Filter_InitializeNotch(&left_motor_16, 333, 16, 6);
-    Filter_InitializeNotch(&right_motor_10, 333, 10, 6);
-    Filter_InitializeNotch(&right_motor_16, 333, 16, 6);
+float FIR_filter_update(FIR_filter* filter, float input){
+    // Store input at current buffer position
+    filter->buffer[filter->buffer_index] = input;
+    filter->buffer_index++;
+
+    // Reset index to 0 when we reach end of buffer
+    if (filter->buffer_index == FILTER_LENGTH){
+        filter->buffer_index = 0;
+    }
+
+    filter->output = 0.0f;  // Reset accumulator for new calculation
+    
+    // Start from current index to access samples in reverse chronological order
+    uint8_t sumIndex = filter->buffer_index;
+
+    // Compute the convolution sum for FIR filter
+    for (uint8_t n = 0; n < FILTER_LENGTH; n++){
+        // Step backward through buffer (most recent to oldest samples)
+        if (sumIndex > 0){
+            sumIndex--;
+        }else{
+            sumIndex = FILTER_LENGTH - 1;  // Wrap to end when reaching beginning
+        }
+
+        // Implement FIR equation: y[n] = Σ h[i]·x[n-i]
+        filter->output += FIR_impulse_response[n] * filter->buffer[sumIndex];
+    }
+    
+    return filter->output;
 }
 
-// Define which filtering is used
-#if FILTER_TYPE == 0
-    void Filter_ProcessFilterTask() {
+void Filter_Speed(IIR_filter* left_IIR, IIR_filter* right_IIR){
     if (Inverter1_HS_Flag) {
         int32_t rpm = (int32_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
-        int32_t filtered = Roll_average(&window_left, rpm);
+        int32_t filtered = IIR_filter_update(left_IIR, rpm);
         CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] = filtered; // Update CVC_data with left inverter filtered speed (RPM)
         Inverter1_HS_Flag = false;
         Inverter1_FilteredSpeed_Flag = true;
     }
     if (Inverter2_HS_Flag) {
         int32_t rpm = (int32_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
-        int32_t filtered = Roll_average(&window_right, rpm);
+        int32_t filtered = IIR_filter_update(right_IIR, rpm);
         CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] = filtered; // Update CVC_data with right inverter filtered speed (RPM)
         Inverter2_HS_Flag = false;
         Inverter2_FilteredSpeed_Flag = true;
     }
 }
-#else if FILTER_TYPE == 1
-void Filter_ProcessFilterTask() {
-    if (Inverter1_HS_Flag) {
-        int16_t rpm = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
-        int16_t filtered = Filter_ProcessNotch(&left_motor_10, rpm);
-        filtered = Filter_ProcessNotch(&left_motor_16, filtered);
-        CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] = (uint16_t)filtered; // Update CVC_data with left inverter filtered speed (RPM)
-        Inverter1_HS_Flag = false;
-        Inverter1_FilteredSpeed_Flag = true;
-    }
-    if (Inverter2_HS_Flag) {
-        int16_t rpm = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
-        int16_t filtered = Filter_ProcessNotch(&right_motor_10, rpm);
-        filtered = Filter_ProcessNotch(&right_motor_16, filtered);
-        CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] = (uint16_t)filtered; // Update CVC_data with right inverter filtered speed (RPM)
-        Inverter2_HS_Flag = false;
-        Inverter2_FilteredSpeed_Flag = true;
-    }
-}
-#endif

@@ -535,8 +535,8 @@ void CAN_BroadcastData() {
     // int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED];
     // int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
     // int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
-    int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED];
-    int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED];
+    int16_t motor1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
+    int16_t motor2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
     if (motor1_speed < 0) {
         motor1_speed = -motor1_speed;
     }
@@ -548,7 +548,7 @@ void CAN_BroadcastData() {
     tx_frame.Tx_header.IDE = CAN_ID_STD;
     tx_frame.Tx_header.StdId = CAN_DASHBOARD_BASE_11 + 2;
     tx_frame.Tx_header.RTR = CAN_RTR_DATA;
-    tx_frame.Tx_header.DLC = 8;
+    tx_frame.Tx_header.DLC = 4;
     tx_frame.data[0] = (CVC_data[CVC_THROTTLE] >> 8) & 0xFF;
     tx_frame.data[1] = CVC_data[CVC_THROTTLE] & 0xFF;
     tx_frame.data[2] = (avg_rpm >> 8) & 0xFF;

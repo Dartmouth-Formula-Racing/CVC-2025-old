@@ -5,7 +5,7 @@ File: traction_control.h
 Decription: Header file for traction_control.c
 */
 
-
+#define MIN_REAR_SPEED 1
 
 /* Function to calculate slip ratio given the front and rear filtered wheel speeds
 Takes in no arguments as data is accessed from the master array: CVC_data */

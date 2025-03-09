@@ -1,56 +1,74 @@
 /*
  * filter.h
  *
- * Created on January 7, 2025
- * Andrei Gerashchenko
+ * Created on March 1, 2025
+ * Sasha Ries
  */
+
 #ifndef CVC_FILTER_H
 #define CVC_FILTER_H
 
 #include <main.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define PI 3.1415926536
 #define WINDOW_SIZE 4
-#define FILTER_TYPE 0
+#define FILTER_TYPE 0 
+#define FILTER_LENGTH 5      // Number of samples used in filtering operations
+#define RPM_SCALE_FACTOR 1000  // Scale factor to increase resolution of filtered RPM values
 
-// Window struct to store an array of size WINDOW_SIZE and a position indicator
+
+/* ------------------------------------------- Define structs -----------------------------------------*/
+/* Structure for Finite Impulse Response (FIR) filter implementation. 
+FIR filters use only input samples (no feedback) and have the form: y[n] = b0*x[n] + b1*x[n-1] + ... + bN*x[n-N] */
 typedef struct {
-    int32_t data_array[WINDOW_SIZE];
-    uint32_t position;
-} sample_window;
+    float buffer[FILTER_LENGTH]; 
+    uint8_t buffer_index;      
+    float output;              
+} FIR_filter;
 
-// Notchfilter struct to store relevant fields for notch filtering
+/* Structure for Infinite Impulse Response (IIR) filter implementation
+IIR filters use both input and previous output samples and have the form:
+y[n] = b0*x[n] + b1*x[n-1] + ... + bN*x[n-N] - a1*y[n-1] - ... - aM*y[n-M] */
 typedef struct {
-    float omega;
-    float alpha;
+    float raw[FILTER_LENGTH+1];    
+    float filtered[FILTER_LENGTH]; 
+    uint8_t raw_index;           
+    uint8_t filtered_index;      
+    float output;                
+} IIR_filter;
 
-    // Filter coefficients
-    float a0;
-    float a1;
-    float a2;
-    float b0;
-    float b1;
-    float b2;
+/**
+ * Initializes an FIR filter structure
+ * @param filter Pointer to the FIR_filter structure to initialize */
+void FIR_filter_init(FIR_filter* filter);
 
-    // State variables
-    float x1;
-    float x2;
-    float y1;
-    float y2;
-} notchfilter_t;
+/**
+ * Updates an FIR filter with a new input sample and computes the new output
+ * Implements the FIR filtering algorithm using predefined impulse response coefficients
+ * @param filter Pointer to the FIR_filter structure to update
+ * @param input New input sample to process
+ * @return The newly computed filter output value
+ */
+float FIR_filter_update(FIR_filter* filter, float input);
 
-extern bool Inverter1_FilteredSpeed_Flag;
-extern bool Inverter2_FilteredSpeed_Flag;
+/**
+ * Initializes an IIR filter structure
+ * @param filter Pointer to the IIR_filter structure to initialize
+ */
+void IIR_filter_init(IIR_filter* filter);
 
-void Filter_InitializeNotch(notchfilter_t* filter, uint16_t samplerate, uint16_t center, uint16_t bandwidth);
+/**
+ * Updates an IIR filter with a new input sample and computes the new output
+ * Implements the IIR filtering algorithm using predefined raw (b) and filtered (a) impulse coefficients
+ * @param filter Pointer to the IIR_filter structure to update
+ * @param input New input sample to process
+ * @return The newly computed filter output value
+ */
+float IIR_filter_update(IIR_filter* filter, int32_t input);
 
-int16_t Filter_ProcessNotch(notchfilter_t* filter, int16_t sample);
 
-int32_t Roll_average(sample_window* window, int32_t new_speed);
-
-void Filter_InitializeFilters(void);
-
-void Filter_ProcessFilterTask(void);
+void Filter_Speed(IIR_filter* left_IIR, IIR_filter* right_IIR);
 
 #endif  // CVC_FILTER_H

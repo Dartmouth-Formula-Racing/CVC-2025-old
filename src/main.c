@@ -30,22 +30,6 @@
 #include <cvc/torque.h>
 #include <cvc/misc.h>
 #include <cvc/filter.h>
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
@@ -55,9 +39,7 @@ CAN_HandleTypeDef hcan1;
 
 SPI_HandleTypeDef hspi1;
 
-/* USER CODE BEGIN PV */
 
-/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -66,6 +48,10 @@ static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_CAN1_Init(void);
+
+IIR_filter left_IIR;
+IIR_filter right_IIR;
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -98,9 +84,6 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -108,7 +91,8 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_CAN1_Init();
-  /* USER CODE BEGIN 2 */
+  IIR_filter_init(&left_IIR);
+  IIR_filter_init(&right_IIR);
   Analog_Configure();
   Relay_Enable();
   Relay_Set(BrakeLight, 1);
@@ -133,7 +117,7 @@ int main(void)
     CAN_Parse_SensorBoard_FilteredSpeeds();
 
     // Use new data to make vehicle control decisions
-    Filter_ProcessFilterTask();
+    Filter_Speed(&left_IIR, &right_IIR);
     Torque_CalculateAvailableTorque();
     Throttle_ProcessThrottle();
     CVC_StateMachine();
