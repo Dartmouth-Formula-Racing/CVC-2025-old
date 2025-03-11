@@ -564,9 +564,6 @@ void CAN_BroadcastFilteredSpeeds() {
     }
     last = HAL_GetTick();
 
-    CAN_Parse_Inverter_HighSpeedParameters(0);
-    CAN_Parse_Inverter_HighSpeedParameters(1);
-
     CAN_Queue_Frame_t tx_frame;
     tx_frame.Tx_header.IDE = CAN_ID_STD;
     tx_frame.Tx_header.StdId = CAN_DASHBOARD_BASE_11 + 3;

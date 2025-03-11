@@ -24,10 +24,16 @@ IIR_filter right_IIR;
  /* These values calculated in a seperate MATLAB script */
 
  // b coefficients (numerator)
-static float IIR_raw_impulse[FILTER_LENGTH + 1] = {0.14410393, -0.419203, 0.27539719, 0.27539719, -0.419203, 0.14410393};
+// static float IIR_raw_impulse[FILTER_LENGTH + 1] = {0.134793, -0.39975544, 0.26500209, 0.26500209, -0.39975544, 0.134793};
 
-// a coefficients (denominator, excluding a[0] which is normalized to 1)
-static float IIR_filtered_impulse[FILTER_LENGTH] = {-4.38041597, 7.73480352, -6.8718419, 3.06679259, -0.548742};
+// // a coefficients (denominator, excluding a[0] which is normalized to 1)
+// static float IIR_filtered_impulse[FILTER_LENGTH] = {-4.30378556, 7.42328477, -6.41349104, 2.77428788, -0.48021674};
+
+ // b coefficients (numerator)
+ static float IIR_raw_impulse[FILTER_LENGTH + 1] = {0.16033825, 0.16033825};
+
+ // a coefficients (denominator, excluding a[0] which is normalized to 1)
+ static float IIR_filtered_impulse[FILTER_LENGTH] = {-0.67932350};
  
  
 /* ----------------------------------------------------- IIR Filter -----------------------------------------------------*/

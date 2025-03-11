@@ -13,9 +13,8 @@
 #include <stdint.h>
 
 #define PI 3.1415926536
-#define WINDOW_SIZE 4
 #define FILTER_TYPE 0 
-#define FILTER_LENGTH 5      // Number of samples used in filtering operations
+#define FILTER_LENGTH 1      // Number of samples used in filtering operations
 #define RPM_SCALE_FACTOR 1000  // Scale factor to increase resolution of filtered RPM values
 
 

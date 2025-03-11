@@ -10,10 +10,12 @@ Decription: Module to calculate slip ratio and a dynamic torque scaling factor
 
 void calculate_slip_ratio(){
     // Get the front and rear wheel speeds for both sides
-    float front_left_speed = (float)((uint32_t)CVC_data[SENSOR_LEFT_WHEELSPEED]);
-    float front_right_speed = (float)((uint32_t)CVC_data[SENSOR_RIGHT_WHEELSPEED]);
-    float rear_left_speed = (float)((uint32_t)CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED]);
-    float rear_right_speed = (float)((uint32_t)CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED]);
+    float front_left_speed = (float)((uint32_t)(CVC_data[SENSOR_LEFT_WHEELSPEED]));
+    float front_right_speed = (float)((uint32_t)(CVC_data[SENSOR_RIGHT_WHEELSPEED]));
+    // float rear_left_speed = (float)((uint32_t)CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED]);
+    // float rear_right_speed = (float)((uint32_t)CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED]);
+    float rear_left_speed = (float)((uint32_t)(CVC_data[INVERTER1_MOTOR_SPEED_HS]));
+    float rear_right_speed = (float)((uint32_t)(CVC_data[INVERTER2_MOTOR_SPEED_HS]));
 
     // Update CVC_data with slip ratios of both sides and multiply by RPM_SCAlE_FACTOR
 

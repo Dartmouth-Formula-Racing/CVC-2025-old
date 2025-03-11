@@ -121,6 +121,7 @@ int main(void)
     Torque_CalculateAvailableTorque();
     Throttle_ProcessThrottle();
     CVC_StateMachine();
+    
     Torque_CalculateAcceleration();
     Torque_CalculateTorque();
     CVC_Cooling_Task();
