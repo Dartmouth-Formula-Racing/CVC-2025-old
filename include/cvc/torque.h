@@ -17,6 +17,13 @@
 #define INVERTER_ACCEL_AVERAGE 3    // Number of acceleration values to average
 #define INVERTER_USE_HS_DATA 1      // 1 if using high-speed message, 0 if using fast messages
 
+// RPM calculated using 20.5in OD tires & 4.7:1 gear reduction
+#define REGEN_ENABLE 1           // Enable regenerative braking
+#define REGEN_TORQUE_LIMIT 30.0  // Maximum regenerative braking torque (Nm)
+#define REGEN_MIN_SPEED 240      // Minimum speed for regenerative braking (5 KPH in RPM)
+#define REGEN_FULL_SPEED 719     // Minimum speed for full regenerative braking (15 KPH in RPM)
+#define REGEN_THROTTLE_ZERO 0.1  // Throttle value for switching from regen to torque command (0.0 - 1.0)
+
 #define LEFT_MOTOR_ENABLE 1   // Left motor enable bit
 #define RIGHT_MOTOR_ENABLE 1  // Right motor enable bit
 
