@@ -45,6 +45,9 @@ TractionControl_t TC_Right = {
     .sample_time_s = TORQUE_PERIOD       // 3ms sample time
 };
 
+bool Inverter1_Clear_Flag;
+bool Inverter2_Clear_Flag;
+
 void Torque_CalculateAcceleration() {
     static uint32_t last_time_1 = 0;
     static uint32_t last_time_2 = 0;
@@ -308,6 +311,58 @@ void Torque_CalculateTorque() {
     CVC_data[CVC_RIGHT_DIRECTION] = right_direction;
 }
 
+void Torque_ClearFaults() {
+    static uint32_t last = 0;
+    if (HAL_GetTick() - last < TORQUE_PERIOD) {
+        return;
+    }
+    last = HAL_GetTick();
+    if (Inverter1_Clear_Flag) {
+        CAN_Queue_Frame_t left_command;
+        for (uint8_t i = 0; i < 8; i++) {
+            left_command.data[i] = 0;
+        }
+        left_command.Tx_header.DLC = 8;
+        left_command.Tx_header.IDE = (CAN_INVERTER_USE_EXT) ? CAN_ID_EXT : CAN_ID_STD;
+        left_command.Tx_header.RTR = CAN_RTR_DATA;
+        if (CAN_INVERTER_USE_EXT) {
+            left_command.Tx_header.ExtId = CAN_INVERTER_BASE_ID1_29 + 33;
+        } else {
+            left_command.Tx_header.StdId = CAN_INVERTER_BASE_ID1_11 + 33;
+        }
+
+        // Parameter 20 - Fault Clear
+        left_command.data[0] = 20;
+        left_command.data[1] = 0;
+        // Write
+        left_command.data[2] = 1;
+        CAN_Queue_TX(&left_command);
+        Inverter1_Clear_Flag = false;
+    }
+    if (Inverter2_Clear_Flag) {
+        CAN_Queue_Frame_t right_command;
+        for (uint8_t i = 0; i < 8; i++) {
+            right_command.data[i] = 0;
+        }
+        right_command.Tx_header.DLC = 8;
+        right_command.Tx_header.IDE = (CAN_INVERTER_USE_EXT) ? CAN_ID_EXT : CAN_ID_STD;
+        right_command.Tx_header.RTR = CAN_RTR_DATA;
+        if (CAN_INVERTER_USE_EXT) {
+            right_command.Tx_header.ExtId = CAN_INVERTER_BASE_ID2_29 + 33;
+        } else {
+            right_command.Tx_header.StdId = CAN_INVERTER_BASE_ID2_11 + 33;
+        }
+
+        // Parameter 20 - Fault Clear
+        right_command.data[0] = 20;
+        right_command.data[1] = 0;
+        // Write
+        right_command.data[2] = 1;
+        CAN_Queue_TX(&right_command);
+        Inverter2_Clear_Flag = false;
+    }
+    
+}
 
 void Torque_SendTorque() {
     static bool first_enable = false;

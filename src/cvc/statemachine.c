@@ -9,6 +9,7 @@
 #include <cvc/parse.h>
 #include <cvc/relay.h>
 #include <cvc/statemachine.h>
+#include <cvc/torque.h>
 #include <main.h>
 #include <stdbool.h>
 
@@ -114,6 +115,13 @@ void CVC_StateMachine() {
                     state = BUZZER;  // Start buzzer
                     buzzer_start_time = HAL_GetTick();
                     drive_lockout = true;
+                    // Use time during buzzer to clear inverter faults
+                    if (!Inverter1_Clear_Flag) {
+                        Inverter1_Clear_Flag = true;
+                    }
+                    if (!Inverter2_Clear_Flag) {
+                        Inverter2_Clear_Flag = true;
+                    }
                 } else {
                     state = NOT_READY_TO_DRIVE;
                     drive_lockout = true;
@@ -136,7 +144,6 @@ void CVC_StateMachine() {
             if (charging) {
                 state = CHARGING;
                 buzzer = false;
-
                 break;
             }
 

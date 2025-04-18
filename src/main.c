@@ -125,8 +125,10 @@ int main(void)
     Torque_CalculateAcceleration();
     Torque_CalculateTorque();
     CVC_Cooling_Task();
+    CVC_BrakeLight_Task();
 
     // Send CVC data to rest of vehicle
+    Torque_ClearFaults();
     CAN_BroadcastSafety();
     CAN_BroadcastData();
     CAN_BroadcastFilteredSpeeds();
