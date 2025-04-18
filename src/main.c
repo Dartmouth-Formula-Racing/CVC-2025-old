@@ -130,7 +130,6 @@ int main(void)
     CAN_BroadcastSafety();
     CAN_BroadcastData();
     CAN_BroadcastFilteredSpeeds();
-    calculate_slip_ratio();
     CAN_BroadcastSlipRatio();
     Torque_SendTorque();
     CAN_Process_TX();

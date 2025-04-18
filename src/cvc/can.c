@@ -559,7 +559,7 @@ void CAN_BroadcastData() {
 void CAN_BroadcastFilteredSpeeds() {
     static uint32_t last = 0;
     // magic numbers are great
-    if (HAL_GetTick() - last < 3) {
+    if (HAL_GetTick() - last < 10) {
         return;
     }
     last = HAL_GetTick();

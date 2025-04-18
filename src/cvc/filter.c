@@ -10,6 +10,7 @@
 #include <cvc/filter.h>
 #include <math.h>
 #include <stdint.h>
+#include "torque.h"
 
 
 bool Inverter1_FilteredSpeed_Flag = false;
@@ -144,6 +145,12 @@ float FIR_filter_update(FIR_filter* filter, float input){
 }
 
 void Filter_Speed(IIR_filter* left_IIR, IIR_filter* right_IIR){
+    static uint32_t last = 0;
+    if (HAL_GetTick() - last < TORQUE_PERIOD) {
+        return;
+    }
+    last = HAL_GetTick();
+
     if (Inverter1_HS_Flag) {
         int32_t rpm = (int32_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
         int32_t filtered = IIR_filter_update(left_IIR, rpm);

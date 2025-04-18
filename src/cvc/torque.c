@@ -12,6 +12,38 @@
 #include <cvc/torque.h>
 #include <main.h>
 #include <stdbool.h>
+#include "traction_control.h"
+
+
+// Traction Control parameters - can be tuned for different conditions
+// Optimal slip ratio:
+// - Lower values (~0.05) for wet/low grip conditions
+// - Higher values (~0.15) for dry/high grip conditions
+TractionControl_t TC_Left = {
+    .optimal_slip = 0.15f,       // Optimal slip ratio
+    .error_previous = 0.0f,
+    .error_integral = 0.0f,
+    .kp = 1.0f,                  // Proportional gain
+    .ki = 0.5f,                  // Integral gain
+    .kd = 0.1f,                  // Derivative gain
+    .output_limit_min = 0.15f,    // Minimum scaling factor
+    .output_limit_max = 1.0f,    // Maximum scaling factor
+    .integral_limit = 1.0f,      // Anti-windup limit
+    .sample_time_s = TORQUE_PERIOD       // 3ms sample time
+};
+
+TractionControl_t TC_Right = {
+    .optimal_slip = 0.15f,       // Optimal slip ratio
+    .error_previous = 0.0f,
+    .error_integral = 0.0f,
+    .kp = 1.0f,                  // Proportional gain
+    .ki = 0.5f,                  // Integral gain
+    .kd = 0.1f,                  // Derivative gain
+    .output_limit_min = 0.15f,    // Minimum scaling factor
+    .output_limit_max = 1.0f,    // Maximum scaling factor
+    .integral_limit = 1.0f,      // Anti-windup limit
+    .sample_time_s = TORQUE_PERIOD       // 3ms sample time
+};
 
 void Torque_CalculateAcceleration() {
     static uint32_t last_time_1 = 0;
@@ -163,6 +195,13 @@ void Torque_CalculateTorque() {
     }
     last = HAL_GetTick();
 
+    // Make sure slip ratios are calculated and up-to-date
+    calculate_slip_ratio();
+
+    // Get slip ratios and convert back from scaled uint16_t to float
+    volatile float left_slip = (float)((uint16_t)CVC_data[CVC_SLIP_RATIO_LEFT]) / RPM_SCALE_FACTOR;
+    volatile float right_slip = (float)((uint16_t)CVC_data[CVC_SLIP_RATIO_RIGHT]) / RPM_SCALE_FACTOR;
+
     CAN_Parse_Inverter_AnalogInputStatus(1);
 
     volatile float throttle = (float)((uint16_t)CVC_data[CVC_THROTTLE]) / 1000;
@@ -195,6 +234,10 @@ void Torque_CalculateTorque() {
     if (!throttle_valid || CVC_data[CVC_STATE] != READY_TO_DRIVE) {
         left_torque = 0;
         right_torque = 0;
+        
+        // Reset traction control when not in drive mode
+        Traction_Control_Reset(&TC_Left);
+        Traction_Control_Reset(&TC_Right);
     } else {
         if (CVC_data[CVC_DRIVE_MODE] == DRIVE) {
             // Calculate torque for drive mode
@@ -208,18 +251,17 @@ void Torque_CalculateTorque() {
                 right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
             }
 
-            // Traction control
-            // if (left_accel > TRACTION_CONTROL_MAX_ACCEL) {
-            //     left_torque -= (int16_t)(left_torque * TRACTION_CONTROL_GAIN * (left_accel - TRACTION_CONTROL_MAX_ACCEL));
-            // }
-            // if (right_accel > TRACTION_CONTROL_MAX_ACCEL) {
-            //     right_torque -= (int16_t)(right_torque * TRACTION_CONTROL_GAIN * (right_accel - TRACTION_CONTROL_MAX_ACCEL));
-            // }
+            // Apply traction control
+            float left_tc_factor = Traction_Control_Update(&TC_Left, left_slip);
+            float right_tc_factor = Traction_Control_Update(&TC_Right, right_slip);
+            
+            left_torque = (int16_t)(left_torque * left_tc_factor);
+            right_torque = (int16_t)(right_torque * right_tc_factor);
 
             left_direction = 0;
             right_direction = 1;
         } else if (CVC_data[CVC_DRIVE_MODE] == REVERSE) {
-            // Calculate torque for drive mode
+            // Calculate torque for reverse mode
             left_torque = (int16_t)(max_left_torque * 10 * (throttle * REVERSE_TORQUE_LIMIT / 100.0));
             right_torque = (int16_t)(max_right_torque * 10 * (throttle * REVERSE_TORQUE_LIMIT / 100.0));
 
@@ -229,6 +271,7 @@ void Torque_CalculateTorque() {
             } else {  // Right turn
                 right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
             }
+            
 
             left_direction = 1;
             right_direction = 0;
@@ -264,6 +307,7 @@ void Torque_CalculateTorque() {
     CVC_data[CVC_LEFT_DIRECTION] = left_direction;
     CVC_data[CVC_RIGHT_DIRECTION] = right_direction;
 }
+
 
 void Torque_SendTorque() {
     static bool first_enable = false;
