@@ -12,37 +12,37 @@
 #include <cvc/torque.h>
 #include <main.h>
 #include <stdbool.h>
-#include "traction_control.h"
 
+#include "traction_control.h"
 
 // Traction Control parameters - can be tuned for different conditions
 // Optimal slip ratio:
 // - Lower values (~0.05) for wet/low grip conditions
 // - Higher values (~0.15) for dry/high grip conditions
 TractionControl_t TC_Left = {
-    .optimal_slip = 0.15f,       // Optimal slip ratio
+    .optimal_slip = 0.15f,  // Optimal slip ratio
     .error_previous = 0.0f,
     .error_integral = 0.0f,
-    .kp = 1.0f,                  // Proportional gain
-    .ki = 0.5f,                  // Integral gain
-    .kd = 0.1f,                  // Derivative gain
-    .output_limit_min = 0.15f,    // Minimum scaling factor
-    .output_limit_max = 1.0f,    // Maximum scaling factor
-    .integral_limit = 1.0f,      // Anti-windup limit
-    .sample_time_s = TORQUE_PERIOD       // 3ms sample time
+    .kp = 1.0f,                     // Proportional gain
+    .ki = 0.5f,                     // Integral gain
+    .kd = 0.1f,                     // Derivative gain
+    .output_limit_min = 0.0f,      // Minimum scaling factor
+    .output_limit_max = 1.0f,       // Maximum scaling factor
+    .integral_limit = 1.0f,         // Anti-windup limit
+    .sample_time_s = TORQUE_PERIOD  // 3ms sample time
 };
 
 TractionControl_t TC_Right = {
-    .optimal_slip = 0.15f,       // Optimal slip ratio
+    .optimal_slip = 0.15f,  // Optimal slip ratio
     .error_previous = 0.0f,
     .error_integral = 0.0f,
-    .kp = 1.0f,                  // Proportional gain
-    .ki = 0.5f,                  // Integral gain
-    .kd = 0.1f,                  // Derivative gain
-    .output_limit_min = 0.15f,    // Minimum scaling factor
-    .output_limit_max = 1.0f,    // Maximum scaling factor
-    .integral_limit = 1.0f,      // Anti-windup limit
-    .sample_time_s = TORQUE_PERIOD       // 3ms sample time
+    .kp = 1.0f,                     // Proportional gain
+    .ki = 0.5f,                     // Integral gain
+    .kd = 0.1f,                     // Derivative gain
+    .output_limit_min = 0.0f,      // Minimum scaling factor
+    .output_limit_max = 1.0f,       // Maximum scaling factor
+    .integral_limit = 1.0f,         // Anti-windup limit
+    .sample_time_s = TORQUE_PERIOD  // 3ms sample time
 };
 
 bool Inverter1_Clear_Flag;
@@ -125,7 +125,7 @@ void Torque_CalculateAvailableTorque() {
     volatile float Inverter1_voltage = (float)((int16_t)CVC_data[INVERTER1_DC_BUS_VOLTAGE_HS]) * 0.1;  // High speed message
     volatile float Inverter2_voltage = (float)((int16_t)CVC_data[INVERTER2_DC_BUS_VOLTAGE_HS]) * 0.1;  // High speed message
     volatile int16_t Inverter1_rpm = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];                      // High speed message
-    volatile int16_t Inverter2_rpm = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];                      // High speed message    
+    volatile int16_t Inverter2_rpm = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];                      // High speed message
 #else
     CAN_Parse_Inverter_VoltageParameters(0);
     CAN_Parse_Inverter_VoltageParameters(1);
@@ -172,8 +172,10 @@ void Torque_CalculateAvailableTorque() {
     // P = IV = τω
     // V = bus voltage, I = max inverter current, ω = motor speed
     // Calculate torque at which the bus voltage will sag to the minimum voltage
-    // volatile float max_inverter1_torque = Inverter1_voltage * Inverter1_max_current / (Inverter1_rpm * RPM_TO_RADS);
-    // volatile float max_inverter2_torque = Inverter2_voltage * Inverter2_max_current / (Inverter2_rpm * RPM_TO_RADS);
+    // volatile float max_inverter1_torque = Inverter1_voltage *
+    // Inverter1_max_current / (Inverter1_rpm * RPM_TO_RADS); volatile float
+    // max_inverter2_torque = Inverter2_voltage * Inverter2_max_current /
+    // (Inverter2_rpm * RPM_TO_RADS);
 
     // τ = Kτ * I
     volatile float max_inverter1_torque = TORQUE_CONSTANT * Inverter1_max_current;
@@ -199,7 +201,7 @@ void Torque_CalculateTorque() {
     last = HAL_GetTick();
 
     // Make sure slip ratios are calculated and up-to-date
-    calculate_slip_ratio();
+    Traction_Calculate_SlipRatio();
 
     // Get slip ratios and convert back from scaled uint16_t to float
     volatile float left_slip = (float)((uint16_t)CVC_data[CVC_SLIP_RATIO_LEFT]) / RPM_SCALE_FACTOR;
@@ -237,7 +239,7 @@ void Torque_CalculateTorque() {
     if (!throttle_valid || CVC_data[CVC_STATE] != READY_TO_DRIVE) {
         left_torque = 0;
         right_torque = 0;
-        
+
         // Reset traction control when not in drive mode
         Traction_Control_Reset(&TC_Left);
         Traction_Control_Reset(&TC_Right);
@@ -257,7 +259,7 @@ void Torque_CalculateTorque() {
             // Apply traction control
             float left_tc_factor = Traction_Control_Update(&TC_Left, left_slip);
             float right_tc_factor = Traction_Control_Update(&TC_Right, right_slip);
-            
+
             left_torque = (int16_t)(left_torque * left_tc_factor);
             right_torque = (int16_t)(right_torque * right_tc_factor);
 
@@ -274,7 +276,6 @@ void Torque_CalculateTorque() {
             } else {  // Right turn
                 right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
             }
-            
 
             left_direction = 1;
             right_direction = 0;
@@ -296,12 +297,14 @@ void Torque_CalculateTorque() {
     // Final sanity check
     if (left_torque > NOMINAL_TORQUE * 10) {
         left_torque = NOMINAL_TORQUE * 10;
-    } else if (left_torque < 0) {  // Assumes no regen for now, regen requires opposing torque value
+    } else if (left_torque < 0) {  // Assumes no regen for now, regen requires
+                                   // opposing torque value
         left_torque = 0;
     }
     if (right_torque > NOMINAL_TORQUE * 10) {
         right_torque = NOMINAL_TORQUE * 10;
-    } else if (right_torque < 0) {  // Assumes no regen for now, regen requires opposing torque value
+    } else if (right_torque < 0) {  // Assumes no regen for now, regen requires
+                                    // opposing torque value
         right_torque = 0;
     }
 
@@ -361,7 +364,6 @@ void Torque_ClearFaults() {
         CAN_Queue_TX(&right_command);
         Inverter2_Clear_Flag = false;
     }
-    
 }
 
 void Torque_SendTorque() {
@@ -409,15 +411,21 @@ void Torque_SendTorque() {
             // Byte 5 bit 2: Speed mode enable (0 = disable, 1 = enable) [5]
             if (DISABLE_ON_ZERO_THROTTLE) {
                 if ((float)((uint16_t)CVC_data[CVC_THROTTLE]) * 0.01 > 0.0) {
-                    left_command.data[5] = 0x01;   // Inverter enabled, discharge disabled, speed mode disabled
-                    right_command.data[5] = 0x01;  // Inverter enabled, discharge disabled, speed mode disabled
+                    left_command.data[5] = 0x01;   // Inverter enabled, discharge disabled, speed
+                                                   // mode disabled
+                    right_command.data[5] = 0x01;  // Inverter enabled, discharge disabled, speed
+                                                   // mode disabled
                 } else {
-                    left_command.data[5] = 0x00;   // Inverter disabled, discharge disabled, speed mode disabled
-                    right_command.data[5] = 0x00;  // Inverter disabled, discharge disabled, speed mode disabled
+                    left_command.data[5] = 0x00;   // Inverter disabled, discharge disabled, speed
+                                                   // mode disabled
+                    right_command.data[5] = 0x00;  // Inverter disabled, discharge disabled, speed
+                                                   // mode disabled
                 }
             } else if (!first_enable) {
-                left_command.data[5] = 0x01;   // Inverter enabled, discharge disabled, speed mode disabled
-                right_command.data[5] = 0x01;  // Inverter enabled, discharge disabled, speed mode disabled
+                left_command.data[5] = 0x01;   // Inverter enabled, discharge
+                                               // disabled, speed mode disabled
+                right_command.data[5] = 0x01;  // Inverter enabled, discharge
+                                               // disabled, speed mode disabled
             }
         }
         if (first_enable) {

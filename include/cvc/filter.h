@@ -13,29 +13,28 @@
 #include <stdint.h>
 
 #define PI 3.1415926536
-#define FILTER_TYPE 0 
-#define FILTER_LENGTH 1      // Number of samples used in filtering operations
+#define FILTER_TYPE 0
+#define FILTER_LENGTH 1        // Number of samples used in filtering operations
 #define RPM_SCALE_FACTOR 1000  // Scale factor to increase resolution of filtered RPM values
 
-
 /* ------------------------------------------- Define structs -----------------------------------------*/
-/* Structure for Finite Impulse Response (FIR) filter implementation. 
+/* Structure for Finite Impulse Response (FIR) filter implementation.
 FIR filters use only input samples (no feedback) and have the form: y[n] = b0*x[n] + b1*x[n-1] + ... + bN*x[n-N] */
 typedef struct {
-    float buffer[FILTER_LENGTH]; 
-    uint8_t buffer_index;      
-    float output;              
+    float buffer[FILTER_LENGTH];
+    uint8_t buffer_index;
+    float output;
 } FIR_filter;
 
 /* Structure for Infinite Impulse Response (IIR) filter implementation
 IIR filters use both input and previous output samples and have the form:
 y[n] = b0*x[n] + b1*x[n-1] + ... + bN*x[n-N] - a1*y[n-1] - ... - aM*y[n-M] */
 typedef struct {
-    float raw[FILTER_LENGTH+1];    
-    float filtered[FILTER_LENGTH]; 
-    uint8_t raw_index;           
-    uint8_t filtered_index;      
-    float output;                
+    float raw[FILTER_LENGTH + 1];
+    float filtered[FILTER_LENGTH];
+    uint8_t raw_index;
+    uint8_t filtered_index;
+    float output;
 } IIR_filter;
 
 /**
@@ -67,7 +66,18 @@ void IIR_filter_init(IIR_filter* filter);
  */
 float IIR_filter_update(IIR_filter* filter, int32_t input);
 
-
 void Filter_Speed(IIR_filter* left_IIR, IIR_filter* right_IIR);
+
+/**
+ * Initializes the filter module and its filters
+ * This function should be called once at the start of the program to set up the filters
+ */
+void Filter_Configure(void);
+
+/**
+ * Task that runs periodically to update the filter outputs
+ * This function should be called in the main loop or a dedicated task
+ */
+void Filter_Task(void);
 
 #endif  // CVC_FILTER_H

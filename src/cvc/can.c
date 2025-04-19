@@ -548,7 +548,7 @@ void CAN_BroadcastData() {
     tx_frame.Tx_header.IDE = CAN_ID_STD;
     tx_frame.Tx_header.StdId = CAN_DASHBOARD_BASE_11 + 2;
     tx_frame.Tx_header.RTR = CAN_RTR_DATA;
-    tx_frame.Tx_header.DLC = 4;
+    tx_frame.Tx_header.DLC = 8;
     tx_frame.data[0] = (CVC_data[CVC_THROTTLE] >> 8) & 0xFF;
     tx_frame.data[1] = CVC_data[CVC_THROTTLE] & 0xFF;
     tx_frame.data[2] = (avg_rpm >> 8) & 0xFF;
@@ -566,28 +566,28 @@ void CAN_BroadcastFilteredSpeeds() {
 
     CAN_Queue_Frame_t tx_frame;
     tx_frame.Tx_header.IDE = CAN_ID_STD;
-    tx_frame.Tx_header.StdId = CAN_DASHBOARD_BASE_11 + 3;
+    tx_frame.Tx_header.StdId = CAN_SENSORBOARD_BASE_11 + 3;
     tx_frame.Tx_header.RTR = CAN_RTR_DATA;
     tx_frame.Tx_header.DLC = 8;
 
     // Rear left wheel filtered speeds
     tx_frame.data[0] = (CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] >> 24) & 0xFF;
-    tx_frame.data[1] = (CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] >> 16) & 0xFF;      
-    tx_frame.data[2] = (CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] >> 8) & 0xFF; 
-    tx_frame.data[3] = CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] & 0xFF;       
-    
+    tx_frame.data[1] = (CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] >> 16) & 0xFF;
+    tx_frame.data[2] = (CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] >> 8) & 0xFF;
+    tx_frame.data[3] = CVC_data[INVERTER1_MOTOR_SPEED_HS_FILTERED] & 0xFF;
+
     // Rear right wheel filtered speeds
     tx_frame.data[4] = (CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] >> 24) & 0xFF;
-    tx_frame.data[5] = (CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] >> 16) & 0xFF;      
-    tx_frame.data[6] = (CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] >> 8) & 0xFF; 
-    tx_frame.data[7] = CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] & 0xFF;   
+    tx_frame.data[5] = (CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] >> 16) & 0xFF;
+    tx_frame.data[6] = (CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] >> 8) & 0xFF;
+    tx_frame.data[7] = CVC_data[INVERTER2_MOTOR_SPEED_HS_FILTERED] & 0xFF;
     CAN_Queue_TX(&tx_frame);
 }
 
 void CAN_BroadcastSlipRatio() {
     // Static variable to track the last transmission time
     static uint32_t last = 0;
-        
+
     // Check if enough time has passed since the last transmission
     // Using a similar interval pattern as seen in other broadcast functions
     if (HAL_GetTick() - last < CAN_SLIPRATIO_SEND_INTERVAL) {
@@ -599,22 +599,22 @@ void CAN_BroadcastSlipRatio() {
     CAN_Queue_Frame_t tx_frame;
 
     // Configure frame properties for standard ID format
-    tx_frame.Tx_header.IDE = CAN_ID_STD;                    // Standard ID format
-    tx_frame.Tx_header.StdId = CAN_SENSORBOARD_BASE_11 + 2; // Base address + 2
-    tx_frame.Tx_header.RTR = CAN_RTR_DATA;                  // Data frame
-    tx_frame.Tx_header.DLC = 4;                             // 4 bytes of data
+    tx_frame.Tx_header.IDE = CAN_ID_STD;                     // Standard ID format
+    tx_frame.Tx_header.StdId = CAN_SENSORBOARD_BASE_11 + 2;  // Base address + 2
+    tx_frame.Tx_header.RTR = CAN_RTR_DATA;                   // Data frame
+    tx_frame.Tx_header.DLC = 4;                              // 4 bytes of data
 
     // Populate data bytes
     // Following the pattern seen in other functions where data is split into high and low bytes
     // tx_frame.data[0] = (CVC_data[CVC_SLIP_RATIO_LEFT] >> 24) & 0xFF;
-    // tx_frame.data[1] = (CVC_data[CVC_SLIP_RATIO_LEFT] >> 16) & 0xFF;      
-    tx_frame.data[0] = (CVC_data[CVC_SLIP_RATIO_LEFT] >> 8) & 0xFF; 
-    tx_frame.data[1] = CVC_data[CVC_SLIP_RATIO_LEFT] & 0xFF;       
-    
+    // tx_frame.data[1] = (CVC_data[CVC_SLIP_RATIO_LEFT] >> 16) & 0xFF;
+    tx_frame.data[0] = (CVC_data[CVC_SLIP_RATIO_LEFT] >> 8) & 0xFF;
+    tx_frame.data[1] = CVC_data[CVC_SLIP_RATIO_LEFT] & 0xFF;
+
     // tx_frame.data[4] = (CVC_data[CVC_SLIP_RATIO_RIGHT] >> 24) & 0xFF;
-    // tx_frame.data[5] = (CVC_data[CVC_SLIP_RATIO_RIGHT] >> 16) & 0xFF;      
-    tx_frame.data[2] = (CVC_data[CVC_SLIP_RATIO_RIGHT] >> 8) & 0xFF; 
-    tx_frame.data[3] = CVC_data[CVC_SLIP_RATIO_RIGHT] & 0xFF;       
+    // tx_frame.data[5] = (CVC_data[CVC_SLIP_RATIO_RIGHT] >> 16) & 0xFF;
+    tx_frame.data[2] = (CVC_data[CVC_SLIP_RATIO_RIGHT] >> 8) & 0xFF;
+    tx_frame.data[3] = CVC_data[CVC_SLIP_RATIO_RIGHT] & 0xFF;
 
     // Queue the frame for transmission
     CAN_Queue_TX(&tx_frame);

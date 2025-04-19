@@ -1,5 +1,5 @@
-#include <cvc/parse.h>
 #include <cvc/data.h>
+#include <cvc/parse.h>
 
 // ========== Dashboard Parsing Functions ==========
 /**
@@ -542,7 +542,6 @@ void CAN_Parse_SensorBoard_RawSpeeds() {
     CAN_data_parsed[SENSOR_WheelSpeed_Raw] = true;
 }
 
-
 /**
  * @brief Parse Sensor Board CAN messages.
  * @param frame: A CAN frame containing 8 bytes of data to be parsed.
@@ -564,7 +563,6 @@ void CAN_Parse_SensorBoard_FilteredSpeeds() {
 
     CAN_data_parsed[SENSOR_WheelSpeed_Filtered] = true;
 }
-
 
 /**
  * @brief Parses Inverter 29-bit Temperatures #1 CAN message. (0)
@@ -1060,7 +1058,8 @@ void CAN_Parse_Inverter_InternalStateParameters(bool inverter) {
         // Byte 4
         // Bit 0: Inverter Run Mode (0 = Torque Mode, 1 = Speed Mode)
         // Bit 1: Self Sensing Assist Enable
-        // Bit 5-7: Inverter Active Discharge State (000 (0) = Discharge Disabled, 001 (1) = Discharge Enabled, waiting, 010 (2) = Performing Speed Check, 011 (3) = Discharge Actively occurring, 100 (4) = Discharge Completed)
+        // Bit 5-7: Inverter Active Discharge State (000 (0) = Discharge Disabled, 001 (1) = Discharge Enabled, waiting, 010 (2) = Performing Speed Check, 011
+        // (3) = Discharge Actively occurring, 100 (4) = Discharge Completed)
         CVC_data[INVERTER1_RUN_MODE] = (data[5] >> 0) & 0x01;
         CVC_data[INVERTER1_SELF_SENSING_ASSIST] = (data[5] >> 1) & 0x01;
         CVC_data[INVERTER1_ACTIVE_DISCHARGE_STATE] = (data[5] >> 5) & 0x07;
@@ -1082,11 +1081,11 @@ void CAN_Parse_Inverter_InternalStateParameters(bool inverter) {
         // Bit 0: Direction Command (1 = Forward ;0 = Reverse, if inverter is enabled Stopped, if inverter is disabled)
         // Bit 1: BMS Active (0 = BMS Message is not being received, 1 = BMS Message is being received)
         // Bit 2: BMS Limiting Torque ( 0 = Torque is not being limited by the BMS. 1 = Torque is being limited by the BMS.)
-        // Bit 3: Limit Max Speed (0 = no torque limiting is occurring. 1 = torque limiting is occurring due to the motor speed exceeding the maximum motor speed)
-        // Bit 4: Limit Hot Spot (0 = Inverter hot spot temperature is below the limit. 1 = Inverter is limiting current due to regulate the maximum hot spot temperature.)
-        // Bit 5: Low Speed Limiting (0 = low speed current limiting is not occurring. 1 = low speed current limiting is applied.)
-        // Bit 6: Coolant Temperature Limiting (0 = Max motor current not limited due to coolant temperature.  1 = Max motor current limited due to coolan temperature.)
-        // Bit 7: Limit Stall Burst Model (0 = Not limiting. 1 = Limiting due to stall burst model.)
+        // Bit 3: Limit Max Speed (0 = no torque limiting is occurring. 1 = torque limiting is occurring due to the motor speed exceeding the maximum motor
+        // speed) Bit 4: Limit Hot Spot (0 = Inverter hot spot temperature is below the limit. 1 = Inverter is limiting current due to regulate the maximum hot
+        // spot temperature.) Bit 5: Low Speed Limiting (0 = low speed current limiting is not occurring. 1 = low speed current limiting is applied.) Bit 6:
+        // Coolant Temperature Limiting (0 = Max motor current not limited due to coolant temperature.  1 = Max motor current limited due to coolan
+        // temperature.) Bit 7: Limit Stall Burst Model (0 = Not limiting. 1 = Limiting due to stall burst model.)
         CVC_data[INVERTER1_DIRECTION_COMMAND] = (data[6] >> 0) & 0x01;
         CVC_data[INVERTER1_BMS_ACTIVE] = (data[6] >> 1) & 0x01;
         CVC_data[INVERTER1_BMS_LIMITING_TORQUE] = (data[6] >> 2) & 0x01;
@@ -1125,7 +1124,8 @@ void CAN_Parse_Inverter_InternalStateParameters(bool inverter) {
         // Byte 4
         // Bit 0: Inverter Run Mode (0 = Torque Mode, 1 = Speed Mode)
         // Bit 1: Self Sensing Assist Enable
-        // Bit 5-7: Inverter Active Discharge State (000 (0) = Discharge Disabled, 001 (1) = Discharge Enabled, waiting, 010 (2) = Performing Speed Check, 011 (3) = Discharge Actively occurring, 100 (4) = Discharge Completed)
+        // Bit 5-7: Inverter Active Discharge State (000 (0) = Discharge Disabled, 001 (1) = Discharge Enabled, waiting, 010 (2) = Performing Speed Check, 011
+        // (3) = Discharge Actively occurring, 100 (4) = Discharge Completed)
         CVC_data[INVERTER2_RUN_MODE] = (data[5] >> 0) & 0x01;
         CVC_data[INVERTER2_SELF_SENSING_ASSIST] = (data[5] >> 1) & 0x01;
         CVC_data[INVERTER2_ACTIVE_DISCHARGE_STATE] = (data[5] >> 5) & 0x07;
@@ -1147,11 +1147,11 @@ void CAN_Parse_Inverter_InternalStateParameters(bool inverter) {
         // Bit 0: Direction Command (1 = Forward ;0 = Reverse, if inverter is enabled Stopped, if inverter is disabled)
         // Bit 1: BMS Active (0 = BMS Message is not being received, 1 = BMS Message is being received)
         // Bit 2: BMS Limiting Torque ( 0 = Torque is not being limited by the BMS. 1 = Torque is being limited by the BMS.)
-        // Bit 3: Limit Max Speed (0 = no torque limiting is occurring. 1 = torque limiting is occurring due to the motor speed exceeding the maximum motor speed)
-        // Bit 4: Limit Hot Spot (0 = Inverter hot spot temperature is below the limit. 1 = Inverter is limiting current due to regulate the maximum hot spot temperature.)
-        // Bit 5: Low Speed Limiting (0 = low speed current limiting is not occurring. 1 = low speed current limiting is applied.)
-        // Bit 6: Coolant Temperature Limiting (0 = Max motor current not limited due to coolant temperature.  1 = Max motor current limited due to coolan temperature.)
-        // Bit 7: Limit Stall Burst Model (0 = Not limiting. 1 = Limiting due to stall burst model.)
+        // Bit 3: Limit Max Speed (0 = no torque limiting is occurring. 1 = torque limiting is occurring due to the motor speed exceeding the maximum motor
+        // speed) Bit 4: Limit Hot Spot (0 = Inverter hot spot temperature is below the limit. 1 = Inverter is limiting current due to regulate the maximum hot
+        // spot temperature.) Bit 5: Low Speed Limiting (0 = low speed current limiting is not occurring. 1 = low speed current limiting is applied.) Bit 6:
+        // Coolant Temperature Limiting (0 = Max motor current not limited due to coolant temperature.  1 = Max motor current limited due to coolan
+        // temperature.) Bit 7: Limit Stall Burst Model (0 = Not limiting. 1 = Limiting due to stall burst model.)
         CVC_data[INVERTER2_DIRECTION_COMMAND] = (data[6] >> 0) & 0x01;
         CVC_data[INVERTER2_BMS_ACTIVE] = (data[6] >> 1) & 0x01;
         CVC_data[INVERTER2_BMS_LIMITING_TORQUE] = (data[6] >> 2) & 0x01;
