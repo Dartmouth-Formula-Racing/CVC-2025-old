@@ -41,11 +41,16 @@
 #define TORQUE_COMMAND_SCALE 121.0 / 100.0  // Need to command 121 Nm to inverter to get 100 Nm at motor
 #define PACK_RESISTANCE (BATTERY_CELLS_SERIES * (CELL_INTERNAL_RESISTANCE / BATTERY_CELLS_PARALLEL) + CONTACTOR_RESISTANCE * 2 + MISC_RESISTANCE)
 
+extern bool Inverter1_Clear_Flag;
+extern bool Inverter2_Clear_Flag;
+
 void Torque_CalculateAcceleration(void);
 
 void Torque_CalculateTorque(void);
 
 void Torque_SendTorque(void);
+
+void Torque_ClearFaults(void);
 
 void Torque_CalculateAvailableTorque(void);
 

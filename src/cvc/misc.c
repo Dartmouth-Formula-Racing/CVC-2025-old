@@ -71,3 +71,32 @@ void CVC_Cooling_Task() {
         Relay_Set(Fans, 0);
     }
 }
+
+void CVC_BrakeLight_Task() {
+    static uint32_t last_time = 0;
+    static uint32_t last_flip = 0; // For flashing brake light
+    static bool blink = false;
+    
+    // Always update blink even if not using brakes
+    if (HAL_GetTick() - last_flip > BRAKE_BLINK_INTERVAL) {
+        last_flip = HAL_GetTick();
+        blink = !blink;
+    }
+    
+    if (HAL_GetTick() - last_time < BRAKE_TASK_INTERVAL) {
+        return;
+    }
+    last_time = HAL_GetTick();
+
+    CAN_Parse_Inverter_AnalogInputStatus(0);
+    CAN_Parse_Inverter_AnalogInputStatus(1);
+
+    float brake_voltage = ((float)CVC_data[INVERTER2_ANALOG_INPUT_5]) / 100;
+    if (brake_voltage > HARD_BRAKE_THRESHOLD) {
+        Relay_Set(BrakeLight, blink);
+    } else if (brake_voltage > BRAKE_THRESHOLD) {
+        Relay_Set(BrakeLight, 1);
+    } else {
+        Relay_Set(BrakeLight, 0);
+    }
+}
