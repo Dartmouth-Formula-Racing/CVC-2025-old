@@ -30,6 +30,8 @@
 #include <cvc/torque.h>
 #include <cvc/misc.h>
 #include <cvc/filter.h>
+#include <cvc/data.h>
+#include <cvc/parse.h>
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;

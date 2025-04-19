@@ -246,5 +246,12 @@ void CAN_Parse_Inverter_FaultCodes(bool firstInverter);
 
 void CAN_Parse_Inverter_HighSpeedParameters(bool firstInverter);
 
+/**
+ * @brief Parses Front Sensoar Board 64-bit CAN message. (0x65D)
+ * @param None
+ * @retval None
+ */
+void CAN_Parse_SensorBoard_FilteredSpeeds();
+
 
 #endif // CVC_PARSE_H
