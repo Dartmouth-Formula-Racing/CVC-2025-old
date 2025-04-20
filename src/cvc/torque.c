@@ -169,6 +169,7 @@ void Torque_CalculateTorque() {
     CAN_Parse_Inverter_AnalogInputStatus(1);
     CAN_Parse_Inverter_HighSpeedParameters(1);
     CAN_Parse_Inverter_HighSpeedParameters(0);
+    CAN_Parse_EMUS_BatteryVoltageOverallParameters();
 
     volatile float throttle = (float)((uint16_t)CVC_data[CVC_THROTTLE]) / 1000;
     volatile bool throttle_valid = CVC_data[CVC_THROTTLE_VALID];
@@ -200,7 +201,8 @@ void Torque_CalculateTorque() {
     volatile uint8_t right_direction = 1;
     volatile int16_t max_left_torque = (int16_t)(CVC_data[CVC_INVERTER1_TORQUE_LIMIT]);
     volatile int16_t max_right_torque = (int16_t)(CVC_data[CVC_INVERTER2_TORQUE_LIMIT]);
-    volatile int32_t vector_sign = 1;
+    volatile bool regen_allow = false;
+    volatile bool regen_active = false;
 
     // Clamp steering angle to -1 to 1
     if (steering_angle > 1) {
@@ -223,6 +225,9 @@ void Torque_CalculateTorque() {
             } else {
                 regen_threshold = REGEN_THROTTLE_ZERO;
             }
+            if (CAN_data[BMS_MAX_CELL_VOLTAGE] > (REGEN_MAX_CELL_VOLTAGE * 100)) {
+                regen_threshold = 0.0;
+            }
 #endif  // REGEN_ENABLE
 
             if (throttle >= regen_threshold) {                                      // Throttle above regen point, command positive torque
@@ -233,7 +238,7 @@ void Torque_CalculateTorque() {
                 // Calculate torque for drive mode
                 left_torque = (int16_t)(max_left_torque * 10 * throttle);
                 right_torque = (int16_t)(max_right_torque * 10 * throttle);
-                vector_sign = 1;
+                regen_active = false;
             } else if (throttle < regen_threshold) {                          // Throttle below regen point, command negative torque
                 throttle = (regen_threshold - throttle) / (regen_threshold);  // Normalize throttle to 0-1 range, want 100% regen at 0% throttle
                 throttle = (throttle > 1) ? 1 : throttle;                     // Clamp to 1
@@ -242,7 +247,16 @@ void Torque_CalculateTorque() {
                 // Calculate regen torque
                 left_torque = (int16_t)(-1 * 10 * REGEN_TORQUE_LIMIT * throttle);
                 right_torque = (int16_t)(-1 * 10 * REGEN_TORQUE_LIMIT * throttle);
-                vector_sign = -1;
+
+                if (left_torque < -REGEN_TORQUE_LIMIT * 10) {
+                    left_torque = 0;
+                    right_torque = 0;
+                }
+                if (right_torque < -REGEN_TORQUE_LIMIT * 10) {
+                    right_torque = 0;
+                    left_torque = 0;
+                }
+                regen_active = true;
             }
 
             left_direction = 0;
@@ -251,7 +265,7 @@ void Torque_CalculateTorque() {
             // Calculate torque for drive mode
             left_torque = (int16_t)(max_left_torque * 10 * (throttle * REVERSE_TORQUE_LIMIT / 100.0));
             right_torque = (int16_t)(max_right_torque * 10 * (throttle * REVERSE_TORQUE_LIMIT / 100.0));
-            vector_sign = 1;
+            regen_active = false;
 
             left_direction = 1;
             right_direction = 0;
@@ -259,10 +273,18 @@ void Torque_CalculateTorque() {
     }
 
     // Torque vectoring
-    if (steering_angle < 0) {
-        left_torque += (int16_t)(TORQUE_VECTORING_GAIN * left_torque * steering_angle * vector_sign);
-    } else {  // Right turn
-        right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle * vector_sign);
+    if (regen_active) {
+        if (steering_angle < 0) {
+            left_torque += (int16_t)(REGEN_VECTORING_GAIN * left_torque * steering_angle);
+        } else {  // Right turn
+            right_torque -= (int16_t)(REGEN_VECTORING_GAIN * right_torque * steering_angle);
+        }
+    } else {
+        if (steering_angle < 0) {
+            left_torque += (int16_t)(TORQUE_VECTORING_GAIN * left_torque * steering_angle);
+        } else {  // Right turn
+            right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
+        }
     }
 
     // Apply command scaling factor (121 Nm at inverter = 100 Nm at motor)
