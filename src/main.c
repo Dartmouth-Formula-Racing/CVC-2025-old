@@ -129,6 +129,8 @@ int main(void)
     CAN_Process_RX();
 
     // Use new data to make vehicle control decisions
+    CVC_Odometer_Task();
+    CVC_CalculateEfficiency();
     Torque_CalculateAvailableTorque();
     Throttle_ProcessThrottle();
     CVC_StateMachine();

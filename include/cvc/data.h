@@ -75,6 +75,8 @@ typedef enum {
     CVC_THROTTLE_ADC,
     CVC_THROTTLE,
     CVC_THROTTLE_VALID,
+    CVC_EFFICIENCY,              // Vehicle efficiency (W/km)
+    CVC_ODOMETER,                // Odometer (m)
     CVC_DRIVE_MODE,              // 0 = neutral, 1 = drive, 2 = reverse
     CVC_STATE,                   // vehicle_state_t (state machine state)
     CVC_LV_VOLTAGE,              // Low voltage system voltage

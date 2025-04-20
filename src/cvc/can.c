@@ -541,6 +541,10 @@ void CAN_BroadcastData() {
     tx_frame.data[1] = CVC_data[CVC_THROTTLE] & 0xFF;
     tx_frame.data[2] = (avg_rpm >> 8) & 0xFF;
     tx_frame.data[3] = avg_rpm & 0xFF;
+    tx_frame.data[4] = (CVC_data[CVC_EFFICIENCY] >> 8) & 0xFF;
+    tx_frame.data[5] = CVC_data[CVC_EFFICIENCY] & 0xFF;
+    tx_frame.data[6] = (CVC_data[CVC_ODOMETER] >> 8) & 0xFF;
+    tx_frame.data[7] = CVC_data[CVC_ODOMETER] & 0xFF;
     CAN_Queue_TX(&tx_frame);
 }
 
