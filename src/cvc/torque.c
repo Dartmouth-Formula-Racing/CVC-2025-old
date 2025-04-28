@@ -33,7 +33,7 @@ TractionControl_t TC_Left = {
 };
 
 TractionControl_t TC_Right = {
-    .optimal_slip = 0.0f,  // Optimal slip ratio
+    .optimal_slip = 0.005f,  // Optimal slip ratio
     .error_previous = 0.0f,
     .error_integral = 0.0f,
     .kp = 1.0f,                     // Proportional gain
@@ -204,8 +204,8 @@ void Torque_CalculateTorque() {
     Traction_Calculate_SlipRatio();
 
     // Get slip ratios and convert back from scaled uint16_t to float
-    volatile float left_slip = (float)((uint16_t)CVC_data[CVC_SLIP_RATIO_LEFT]) / RPM_SCALE_FACTOR;
-    volatile float right_slip = (float)((uint16_t)CVC_data[CVC_SLIP_RATIO_RIGHT]) / RPM_SCALE_FACTOR;
+    volatile float left_slip = ((float)(CVC_data[CVC_SLIP_RATIO_LEFT])) / RPM_SCALE_FACTOR;
+    volatile float right_slip = ((float)(CVC_data[CVC_SLIP_RATIO_RIGHT])) / RPM_SCALE_FACTOR;
 
     CAN_Parse_Inverter_AnalogInputStatus(1);
 
@@ -258,7 +258,7 @@ void Torque_CalculateTorque() {
 
             // Apply traction control
             float left_tc_factor = Traction_Control_Update(&TC_Left, left_slip);
-            float right_tc_factor = Traction_Control_Update(&TC_Right, right_slip);
+            volatile float right_tc_factor = Traction_Control_Update(&TC_Right, right_slip);
 
             left_torque = (int16_t)(left_torque * left_tc_factor);
             right_torque = (int16_t)(right_torque * right_tc_factor);
@@ -271,7 +271,7 @@ void Torque_CalculateTorque() {
             right_torque = (int16_t)(max_right_torque * 10 * (throttle * REVERSE_TORQUE_LIMIT / 100.0));
 
             // Torque vectoring
-            if (steering_angle < 0) {  // Left turn
+            if (steering_angle < 0) { // Left turn
                 left_torque += (int16_t)(TORQUE_VECTORING_GAIN * left_torque * steering_angle);
             } else {  // Right turn
                 right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);

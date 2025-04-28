@@ -77,11 +77,12 @@ void Traction_Calculate_SlipRatio() {
     CAN_Parse_Inverter_HighSpeedParameters(0);
     CAN_Parse_Inverter_HighSpeedParameters(1);
     // Get the front and rear wheel speeds for both sides
-    uint16_t front_left_speed = (uint16_t)(CVC_data[SENSOR_LEFT_WHEELSPEED]);
-    uint16_t front_right_speed = (uint16_t)(CVC_data[SENSOR_RIGHT_WHEELSPEED]);
-    uint16_t rear_left_speed = (uint16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
-    uint16_t rear_right_speed = (uint16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
+    uint16_t front_left_speed = (uint16_t)(CVC_data[SENSOR_LEFT_WHEELSPEED]/RPM_SCALE_FACTOR);
+    uint16_t front_right_speed = (uint16_t)(CVC_data[SENSOR_RIGHT_WHEELSPEED]/RPM_SCALE_FACTOR);
+    uint16_t rear_left_speed = (uint16_t)(CVC_data[INVERTER1_MOTOR_SPEED_HS]/4.7);
+    uint16_t rear_right_speed = (uint16_t)(CVC_data[INVERTER2_MOTOR_SPEED_HS]/4.7);
 
+    //update_value(rear_right_speed);
     //update_value(front_right_speed);
 
 
@@ -99,6 +100,6 @@ void Traction_Calculate_SlipRatio() {
         CVC_data[CVC_SLIP_RATIO_RIGHT] = (uint64_t)(((float)(rear_right_speed - front_right_speed) / (float)rear_right_speed) * RPM_SCALE_FACTOR);
     }
 
-    //update_value((uint16_t)(((float)(rear_left_speed - front_left_speed) / (float)rear_left_speed) * RPM_SCALE_FACTOR));
+    update_value((uint16_t)(((float)(rear_right_speed - front_right_speed) / (float)rear_right_speed) * RPM_SCALE_FACTOR));
 
 }
