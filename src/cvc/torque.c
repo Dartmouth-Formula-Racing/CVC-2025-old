@@ -20,7 +20,7 @@
 // - Lower values (~0.05) for wet/low grip conditions
 // - Higher values (~0.15) for dry/high grip conditions
 TractionControl_t TC_Left = {
-    .optimal_slip = 0.15f,  // Optimal slip ratio
+    .optimal_slip = 0.0f,  // Optimal slip ratio
     .error_previous = 0.0f,
     .error_integral = 0.0f,
     .kp = 1.0f,                     // Proportional gain
@@ -33,7 +33,7 @@ TractionControl_t TC_Left = {
 };
 
 TractionControl_t TC_Right = {
-    .optimal_slip = 0.15f,  // Optimal slip ratio
+    .optimal_slip = 0.0f,  // Optimal slip ratio
     .error_previous = 0.0f,
     .error_integral = 0.0f,
     .kp = 1.0f,                     // Proportional gain
