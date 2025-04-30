@@ -11,12 +11,12 @@
 #include <main.h>
 
 void Throttle_ProcessThrottle() {
-    CAN_Parse_Inverter_AnalogInputStatus(0); // Parse inverter analog readings
+    // CAN_Parse_Inverter_AnalogInputStatus(0); // Parse inverter analog readings
 
     static uint32_t throttle_invalid_start = 0;
     static bool throttle_invalid_timer = false;
     uint16_t throttle_adc = (uint16_t)CVC_data[CVC_THROTTLE_ADC];
-    float throttle_pulldown = (float)((int32_t)CVC_data[INVERTER1_ANALOG_INPUT_2]) * 0.01;
+    // volatile float throttle_pulldown = (float)((int32_t)CVC_data[INVERTER1_ANALOG_INPUT_2]) * 0.01;
     bool throttle_valid = false;
     float throttle_position = 0.0;
 
