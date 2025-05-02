@@ -18,20 +18,23 @@
 #define INVERTER_USE_HS_DATA 1      // 1 if using high-speed message, 0 if using fast messages
 
 // RPM calculated using 20.5in OD tires & 4.7:1 gear reduction
-#define REGEN_ENABLE 0              // Enable regenerative braking
-#define REGEN_TORQUE_MIN 1.0        // Minimum regenerative braking torque (Nm)
-#define REGEN_TORQUE_LIMIT 20.0     // Maximum regenerative braking torque (Nm)
+#define REGEN_ENABLE 1              // Enable regenerative braking
+#define REGEN_TORQUE_MIN 0.5        // Minimum regenerative braking torque (Nm)
+#define REGEN_TORQUE_LIMIT 7.5      // Maximum regenerative braking torque (Nm)
 #define REGEN_MAX_CELL_VOLTAGE 4.1  // Maximum regenerative braking cell voltage (V), 4.1V per cell
 #define REGEN_MAX_CURRENT 72        // Maximum regenerative braking current (A), 6A per cell * 12 cells in parallel
 #define REGEN_MIN_SPEED 240         // Minimum speed for regenerative braking (5 KPH in RPM)
 #define REGEN_FULL_SPEED 1500       // Minimum speed for full regenerative braking (15 KPH in RPM)
 #define REGEN_THROTTLE_ZERO 0.1     // Throttle value for switching from regen to torque command (0.0 - 1.0)
 
+#define REGEN_BRAKE_MIN 0.90
+#define REGEN_BRAKE_MAX 1.40
+
 #define LEFT_MOTOR_ENABLE 1   // Left motor enable bit
 #define RIGHT_MOTOR_ENABLE 1  // Right motor enable bit
 
-#define TORQUE_VECTORING_GAIN 0.30  // Gain for torque vectoring
-#define REGEN_VECTORING_GAIN -0.30  // Gain for regen torque vectoring, should be negative
+#define TORQUE_VECTORING_GAIN 0.70  // Gain for torque vectoring
+#define REGEN_VECTORING_GAIN 0.00   // Gain for regen torque vectoring, should be negative
 #define STEERING_POT_LEFT 0.51      // Left-most position of steering potentiometer
 #define STEERING_POT_RIGHT 4.03     // Right-most position of steering potentiometer
 

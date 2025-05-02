@@ -59,6 +59,9 @@ void CVC_StateMachine() {
             if (CVC_data[CVC_PRECHARGE_BTN] == 1 && CVC_data[CVC_AIR_1_STATE] && HV_voltage >= MIN_PRECHARGE_VOLTAGE) {
                 state = PRECHARGE_STAGE1;
                 precharge_start_time = HAL_GetTick();
+            } else if (HV_voltage >= MIN_PRECHARGE_VOLTAGE && Inverter1_voltage >= HV_voltage * MIN_PRECHARGE_PERCENT && Inverter2_voltage >= HV_voltage * MIN_PRECHARGE_PERCENT) {
+                state = PRECHARGE_STAGE3;
+                precharge_start_time = HAL_GetTick();
             } else {
                 state = WAIT_FOR_PRECHARGE;
             }

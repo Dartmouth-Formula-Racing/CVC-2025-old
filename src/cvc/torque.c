@@ -167,6 +167,7 @@ void Torque_CalculateTorque() {
     last = HAL_GetTick();
 
     CAN_Parse_Inverter_AnalogInputStatus(1);
+    CAN_Parse_Inverter_AnalogInputStatus(0);
     CAN_Parse_Inverter_HighSpeedParameters(1);
     CAN_Parse_Inverter_HighSpeedParameters(0);
     CAN_Parse_EMUS_BatteryVoltageOverallParameters();
@@ -175,6 +176,7 @@ void Torque_CalculateTorque() {
     volatile bool throttle_valid = CVC_data[CVC_THROTTLE_VALID];
     volatile float left_accel = (float)((int64_t)CVC_data[INVERTER1_MOTOR_ACCELERATION]) / ACCEL_INT_FLOAT_SCALING;
     volatile float right_accel = (float)((int64_t)CVC_data[INVERTER2_MOTOR_ACCELERATION]) / ACCEL_INT_FLOAT_SCALING;
+    volatile float brake_voltage = ((float)CVC_data[INVERTER2_ANALOG_INPUT_5]) / 100;
     int16_t inverter1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
     int16_t inverter2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
     int32_t avg_rpm = 0;
@@ -216,20 +218,44 @@ void Torque_CalculateTorque() {
         right_torque = 0;
     } else {
         if (CVC_data[CVC_DRIVE_MODE] == DRIVE) {
-            volatile float regen_threshold = 0.0;  // 0.0 - REGEN_THROTTLE_ZERO, increases with speed
+            volatile float regen_speed_threshold = 0.0;  // 0.0 - REGEN_THROTTLE_ZERO, increases with speed
+            volatile float regen_brake_threshold = 0.0;  // 0.0 - REGEN_THROTTLE_ZERO, increases with brake pressure
+            volatile float regen_threshold = 0.0;        // 0.0 - REGEN_THROTTLE_ZERO, increases with speed and brake pressure
 #if REGEN_ENABLE
             if (avg_rpm <= REGEN_MIN_SPEED) {
-                regen_threshold = 0.0;
+                regen_speed_threshold = 0.0;
             } else if (avg_rpm > REGEN_MIN_SPEED && avg_rpm <= REGEN_FULL_SPEED) {
-                regen_threshold = REGEN_THROTTLE_ZERO - (avg_rpm - REGEN_MIN_SPEED) / (REGEN_FULL_SPEED - REGEN_MIN_SPEED);
+                regen_speed_threshold = REGEN_THROTTLE_ZERO * (avg_rpm - REGEN_MIN_SPEED) / (REGEN_FULL_SPEED - REGEN_MIN_SPEED);
             } else {
-                regen_threshold = REGEN_THROTTLE_ZERO;
+                regen_speed_threshold = REGEN_THROTTLE_ZERO;
             }
             if (CAN_data[BMS_MAX_CELL_VOLTAGE] > (REGEN_MAX_CELL_VOLTAGE * 100)) {
-                regen_threshold = 0.0;
+                regen_speed_threshold = 0.0;
+            }
+            if (brake_voltage <= REGEN_BRAKE_MIN) {
+                regen_brake_threshold = 0.0;
+            } else if (brake_voltage > REGEN_BRAKE_MIN && brake_voltage <= REGEN_BRAKE_MAX) {
+                regen_brake_threshold = REGEN_THROTTLE_ZERO * (brake_voltage - REGEN_BRAKE_MIN) / (REGEN_BRAKE_MAX - REGEN_BRAKE_MIN);
+            } else {
+                regen_brake_threshold = REGEN_THROTTLE_ZERO;
+            }
+            if (CAN_data[BMS_MAX_CELL_VOLTAGE] > (REGEN_MAX_CELL_VOLTAGE * 100)) {
+                regen_brake_threshold = 0.0;
+            }
+            if (regen_brake_threshold < 0) {
+                regen_brake_threshold = 0.0;
+            }
+            if (regen_brake_threshold > REGEN_THROTTLE_ZERO) {
+                regen_brake_threshold = REGEN_THROTTLE_ZERO;
+            }
+            if (regen_speed_threshold < 0) {
+                regen_speed_threshold = 0.0;
+            }
+            if (regen_speed_threshold > REGEN_THROTTLE_ZERO) {
+                regen_speed_threshold = REGEN_THROTTLE_ZERO;
             }
 #endif  // REGEN_ENABLE
-
+            regen_threshold = regen_speed_threshold > regen_brake_threshold ? regen_brake_threshold : regen_speed_threshold; // use the lower of the two thresholds
             if (throttle >= regen_threshold) {                                      // Throttle above regen point, command positive torque
                 throttle = (throttle - regen_threshold) / (1.0 - regen_threshold);  // Normalize throttle to 0-1 range
                 throttle = (throttle > 1) ? 1 : throttle;                           // Clamp to 1
