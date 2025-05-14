@@ -167,11 +167,27 @@ void Torque_CalculateTorque() {
     last = HAL_GetTick();
 
     CAN_Parse_Inverter_AnalogInputStatus(1);
+    CAN_Parse_Inverter_AnalogInputStatus(0);
+    CAN_Parse_Inverter_HighSpeedParameters(1);
+    CAN_Parse_Inverter_HighSpeedParameters(0);
+    CAN_Parse_EMUS_BatteryVoltageOverallParameters();
 
     volatile float throttle = (float)((uint16_t)CVC_data[CVC_THROTTLE]) / 1000;
     volatile bool throttle_valid = CVC_data[CVC_THROTTLE_VALID];
     volatile float left_accel = (float)((int64_t)CVC_data[INVERTER1_MOTOR_ACCELERATION]) / ACCEL_INT_FLOAT_SCALING;
     volatile float right_accel = (float)((int64_t)CVC_data[INVERTER2_MOTOR_ACCELERATION]) / ACCEL_INT_FLOAT_SCALING;
+    volatile float brake_voltage = ((float)CVC_data[INVERTER2_ANALOG_INPUT_5]) / 100;
+    int16_t inverter1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
+    int16_t inverter2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
+    int32_t avg_rpm = 0;
+
+    if (CVC_data[CVC_LEFT_DIRECTION] == 0) {
+        inverter1_speed *= -1;
+    }
+    if (CVC_data[CVC_RIGHT_DIRECTION] == 0) {
+        inverter2_speed *= -1;
+    }
+    avg_rpm = (inverter1_speed + inverter2_speed) / 2;
 
     if (CVC_data[CVC_DRIVE_MODE] == DRIVE) {
         left_accel *= -1;
@@ -187,6 +203,8 @@ void Torque_CalculateTorque() {
     volatile uint8_t right_direction = 1;
     volatile int16_t max_left_torque = (int16_t)(CVC_data[CVC_INVERTER1_TORQUE_LIMIT]);
     volatile int16_t max_right_torque = (int16_t)(CVC_data[CVC_INVERTER2_TORQUE_LIMIT]);
+    volatile bool regen_allow = false;
+    volatile bool regen_active = false;
 
     // Clamp steering angle to -1 to 1
     if (steering_angle > 1) {
@@ -200,24 +218,72 @@ void Torque_CalculateTorque() {
         right_torque = 0;
     } else {
         if (CVC_data[CVC_DRIVE_MODE] == DRIVE) {
-            // Calculate torque for drive mode
-            left_torque = (int16_t)(max_left_torque * 10 * throttle);
-            right_torque = (int16_t)(max_right_torque * 10 * throttle);
-
-            // Torque vectoring
-            if (steering_angle < 0) {  // Left turn
-                left_torque += (int16_t)(TORQUE_VECTORING_GAIN * left_torque * steering_angle);
-            } else {  // Right turn
-                right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
+            volatile float regen_speed_threshold = 0.0;  // 0.0 - REGEN_THROTTLE_ZERO, increases with speed
+            volatile float regen_brake_threshold = 0.0;  // 0.0 - REGEN_THROTTLE_ZERO, increases with brake pressure
+            volatile float regen_threshold = 0.0;        // 0.0 - REGEN_THROTTLE_ZERO, increases with speed and brake pressure
+#if REGEN_ENABLE
+            if (avg_rpm <= REGEN_MIN_SPEED) {
+                regen_speed_threshold = 0.0;
+            } else if (avg_rpm > REGEN_MIN_SPEED && avg_rpm <= REGEN_FULL_SPEED) {
+                regen_speed_threshold = REGEN_THROTTLE_ZERO * (avg_rpm - REGEN_MIN_SPEED) / (REGEN_FULL_SPEED - REGEN_MIN_SPEED);
+            } else {
+                regen_speed_threshold = REGEN_THROTTLE_ZERO;
             }
+            if (CAN_data[BMS_MAX_CELL_VOLTAGE] > (REGEN_MAX_CELL_VOLTAGE * 100)) {
+                regen_speed_threshold = 0.0;
+            }
+            if (brake_voltage <= REGEN_BRAKE_MIN) {
+                regen_brake_threshold = 0.0;
+            } else if (brake_voltage > REGEN_BRAKE_MIN && brake_voltage <= REGEN_BRAKE_MAX) {
+                regen_brake_threshold = REGEN_THROTTLE_ZERO * (brake_voltage - REGEN_BRAKE_MIN) / (REGEN_BRAKE_MAX - REGEN_BRAKE_MIN);
+            } else {
+                regen_brake_threshold = REGEN_THROTTLE_ZERO;
+            }
+            if (CAN_data[BMS_MAX_CELL_VOLTAGE] > (REGEN_MAX_CELL_VOLTAGE * 100)) {
+                regen_brake_threshold = 0.0;
+            }
+            if (regen_brake_threshold < 0) {
+                regen_brake_threshold = 0.0;
+            }
+            if (regen_brake_threshold > REGEN_THROTTLE_ZERO) {
+                regen_brake_threshold = REGEN_THROTTLE_ZERO;
+            }
+            if (regen_speed_threshold < 0) {
+                regen_speed_threshold = 0.0;
+            }
+            if (regen_speed_threshold > REGEN_THROTTLE_ZERO) {
+                regen_speed_threshold = REGEN_THROTTLE_ZERO;
+            }
+#endif  // REGEN_ENABLE
+            regen_threshold = regen_speed_threshold > regen_brake_threshold ? regen_brake_threshold : regen_speed_threshold; // use the lower of the two thresholds
+            if (throttle >= regen_threshold) {                                      // Throttle above regen point, command positive torque
+                throttle = (throttle - regen_threshold) / (1.0 - regen_threshold);  // Normalize throttle to 0-1 range
+                throttle = (throttle > 1) ? 1 : throttle;                           // Clamp to 1
+                throttle = (throttle < 0) ? 0 : throttle;                           // Clamp to 0
 
-            // Traction control
-            // if (left_accel > TRACTION_CONTROL_MAX_ACCEL) {
-            //     left_torque -= (int16_t)(left_torque * TRACTION_CONTROL_GAIN * (left_accel - TRACTION_CONTROL_MAX_ACCEL));
-            // }
-            // if (right_accel > TRACTION_CONTROL_MAX_ACCEL) {
-            //     right_torque -= (int16_t)(right_torque * TRACTION_CONTROL_GAIN * (right_accel - TRACTION_CONTROL_MAX_ACCEL));
-            // }
+                // Calculate torque for drive mode
+                left_torque = (int16_t)(max_left_torque * 10 * throttle);
+                right_torque = (int16_t)(max_right_torque * 10 * throttle);
+                regen_active = false;
+            } else if (throttle < regen_threshold) {                          // Throttle below regen point, command negative torque
+                throttle = (regen_threshold - throttle) / (regen_threshold);  // Normalize throttle to 0-1 range, want 100% regen at 0% throttle
+                throttle = (throttle > 1) ? 1 : throttle;                     // Clamp to 1
+                throttle = (throttle < 0) ? 0 : throttle;                     // Clamp to 0
+
+                // Calculate regen torque
+                left_torque = (int16_t)(-1 * 10 * REGEN_TORQUE_LIMIT * throttle);
+                right_torque = (int16_t)(-1 * 10 * REGEN_TORQUE_LIMIT * throttle);
+
+                if (left_torque < -REGEN_TORQUE_LIMIT * 10) {
+                    left_torque = 0;
+                    right_torque = 0;
+                }
+                if (right_torque < -REGEN_TORQUE_LIMIT * 10) {
+                    right_torque = 0;
+                    left_torque = 0;
+                }
+                regen_active = true;
+            }
 
             left_direction = 0;
             right_direction = 1;
@@ -225,16 +291,25 @@ void Torque_CalculateTorque() {
             // Calculate torque for drive mode
             left_torque = (int16_t)(max_left_torque * 10 * (throttle * REVERSE_TORQUE_LIMIT / 100.0));
             right_torque = (int16_t)(max_right_torque * 10 * (throttle * REVERSE_TORQUE_LIMIT / 100.0));
-
-            // Torque vectoring
-            if (steering_angle < 0) {  // Left turn
-                left_torque += (int16_t)(TORQUE_VECTORING_GAIN * left_torque * steering_angle);
-            } else {  // Right turn
-                right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
-            }
+            regen_active = false;
 
             left_direction = 1;
             right_direction = 0;
+        }
+    }
+
+    // Torque vectoring
+    if (regen_active) {
+        if (steering_angle < 0) {
+            left_torque += (int16_t)(REGEN_VECTORING_GAIN * left_torque * steering_angle);
+        } else {  // Right turn
+            right_torque -= (int16_t)(REGEN_VECTORING_GAIN * right_torque * steering_angle);
+        }
+    } else {
+        if (steering_angle < 0) {
+            left_torque += (int16_t)(TORQUE_VECTORING_GAIN * left_torque * steering_angle);
+        } else {  // Right turn
+            right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
         }
     }
 
@@ -253,13 +328,13 @@ void Torque_CalculateTorque() {
     // Final sanity check
     if (left_torque > NOMINAL_TORQUE * 10) {
         left_torque = NOMINAL_TORQUE * 10;
-    } else if (left_torque < 0) {  // Assumes no regen for now, regen requires opposing torque value
-        left_torque = 0;
+    } else if (left_torque < -NOMINAL_TORQUE * 10) {
+        left_torque = -NOMINAL_TORQUE * 10;
     }
     if (right_torque > NOMINAL_TORQUE * 10) {
         right_torque = NOMINAL_TORQUE * 10;
-    } else if (right_torque < 0) {  // Assumes no regen for now, regen requires opposing torque value
-        right_torque = 0;
+    } else if (right_torque < -NOMINAL_TORQUE * 10) {
+        right_torque = -NOMINAL_TORQUE * 10;
     }
 
     CVC_data[CVC_LEFT_TORQUE] = left_torque;
@@ -318,7 +393,6 @@ void Torque_ClearFaults() {
         CAN_Queue_TX(&right_command);
         Inverter2_Clear_Flag = false;
     }
-    
 }
 
 void Torque_SendTorque() {

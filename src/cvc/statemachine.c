@@ -28,7 +28,7 @@ void CVC_StateMachine() {
 
     volatile float HV_voltage = CVC_data[BMS_TOTAL_VOLTAGE] * 0.01;
     volatile float Inverter1_voltage = (float)((int16_t)CVC_data[INVERTER1_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
-    volatile float Inverter2_voltage = (float)((int16_t)CVC_data[INVERTER1_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
+    volatile float Inverter2_voltage = (float)((int16_t)CVC_data[INVERTER2_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
     volatile float throttle = (float)((uint16_t)CVC_data[CVC_THROTTLE]) * 0.01;
     volatile bool charging = CVC_data[BMS_CHARGING_STATE] > 0;
 
@@ -58,6 +58,9 @@ void CVC_StateMachine() {
             // Precharge begins when AIR 1 is closed and precharge button is pressed
             if (CVC_data[CVC_PRECHARGE_BTN] == 1 && CVC_data[CVC_AIR_1_STATE] && HV_voltage >= MIN_PRECHARGE_VOLTAGE) {
                 state = PRECHARGE_STAGE1;
+                precharge_start_time = HAL_GetTick();
+            } else if (HV_voltage >= MIN_PRECHARGE_VOLTAGE && Inverter1_voltage >= HV_voltage * MIN_PRECHARGE_PERCENT && Inverter2_voltage >= HV_voltage * MIN_PRECHARGE_PERCENT) {
+                state = PRECHARGE_STAGE3;
                 precharge_start_time = HAL_GetTick();
             } else {
                 state = WAIT_FOR_PRECHARGE;
