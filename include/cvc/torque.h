@@ -44,8 +44,8 @@
 
 #define TORQUE_CONSTANT 0.32                // Nm/Arms
 #define RPM_TO_RADS 0.1047197551            // 2 * pi / 60
-#define INVERTER_CURRENT_LIMIT 310.0        // Amps
-#define BUS_MIN_VOLTAGE 70.0                // Volts
+#define INVERTER_CURRENT_LIMIT 270.0        // Amps
+#define BUS_MIN_VOLTAGE 100.0               // Volts
 #define BUS_RESISTANCE 0.275                // Ohms
 #define TORQUE_COMMAND_SCALE 121.0 / 100.0  // Need to command 121 Nm to inverter to get 100 Nm at motor
 

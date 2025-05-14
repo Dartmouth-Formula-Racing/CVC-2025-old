@@ -28,7 +28,7 @@ void CVC_StateMachine() {
 
     volatile float HV_voltage = CVC_data[BMS_TOTAL_VOLTAGE] * 0.01;
     volatile float Inverter1_voltage = (float)((int16_t)CVC_data[INVERTER1_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
-    volatile float Inverter2_voltage = (float)((int16_t)CVC_data[INVERTER1_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
+    volatile float Inverter2_voltage = (float)((int16_t)CVC_data[INVERTER2_DC_BUS_VOLTAGE]) * 0.1;  // Fast message
     volatile float throttle = (float)((uint16_t)CVC_data[CVC_THROTTLE]) * 0.01;
     volatile bool charging = CVC_data[BMS_CHARGING_STATE] > 0;
 
