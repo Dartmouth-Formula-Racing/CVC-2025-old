@@ -130,6 +130,10 @@ void CAN_Store_Data(uint32_t IDE, uint32_t id, uint64_t data64) {
             // DASHBOARD Selector
             CAN_data[DASHBOARD_Selector] = data64;
             CAN_data_parsed[DASHBOARD_Selector] = false;
+        } else if (id == (CAN_DASHBOARD_BASE_11 + 4)) {
+            // DASHBOARD Inputs
+            CAN_data[DASHBOARD_Inputs] = data64;
+            CAN_data_parsed[DASHBOARD_Inputs] = false;
         } else if (id == ((CAN_SENSORBOARD_BASE_11 + 0))) {
             // SENSORBOARD Data
             CAN_data[SENSORBOARD_Data] = data64;

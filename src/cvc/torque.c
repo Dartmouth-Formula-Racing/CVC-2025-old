@@ -171,12 +171,15 @@ void Torque_CalculateTorque() {
     CAN_Parse_Inverter_HighSpeedParameters(1);
     CAN_Parse_Inverter_HighSpeedParameters(0);
     CAN_Parse_EMUS_BatteryVoltageOverallParameters();
+    CAN_Parse_Dashboard_Inputs();
 
     volatile float throttle = (float)((uint16_t)CVC_data[CVC_THROTTLE]) / 1000;
     volatile bool throttle_valid = CVC_data[CVC_THROTTLE_VALID];
     volatile float left_accel = (float)((int64_t)CVC_data[INVERTER1_MOTOR_ACCELERATION]) / ACCEL_INT_FLOAT_SCALING;
     volatile float right_accel = (float)((int64_t)CVC_data[INVERTER2_MOTOR_ACCELERATION]) / ACCEL_INT_FLOAT_SCALING;
     volatile float brake_voltage = ((float)CVC_data[INVERTER2_ANALOG_INPUT_5]) / 100;
+    // volatile float torque_vectoring_gain = TORQUE_VECTORING_GAIN;
+    volatile float torque_vectoring_gain = (float)((uint8_t)CVC_data[DASH_POT_VALUE]) / 255.0;
     int16_t inverter1_speed = (int16_t)CVC_data[INVERTER1_MOTOR_SPEED_HS];
     int16_t inverter2_speed = (int16_t)CVC_data[INVERTER2_MOTOR_SPEED_HS];
     int32_t avg_rpm = 0;
@@ -255,7 +258,8 @@ void Torque_CalculateTorque() {
                 regen_speed_threshold = REGEN_THROTTLE_ZERO;
             }
 #endif  // REGEN_ENABLE
-            regen_threshold = regen_speed_threshold > regen_brake_threshold ? regen_brake_threshold : regen_speed_threshold; // use the lower of the two thresholds
+            regen_threshold =
+                regen_speed_threshold > regen_brake_threshold ? regen_brake_threshold : regen_speed_threshold;  // use the lower of the two thresholds
             if (throttle >= regen_threshold) {                                      // Throttle above regen point, command positive torque
                 throttle = (throttle - regen_threshold) / (1.0 - regen_threshold);  // Normalize throttle to 0-1 range
                 throttle = (throttle > 1) ? 1 : throttle;                           // Clamp to 1
@@ -307,9 +311,9 @@ void Torque_CalculateTorque() {
         }
     } else {
         if (steering_angle < 0) {
-            left_torque += (int16_t)(TORQUE_VECTORING_GAIN * left_torque * steering_angle);
+            left_torque += (int16_t)(torque_vectoring_gain * left_torque * steering_angle);
         } else {  // Right turn
-            right_torque -= (int16_t)(TORQUE_VECTORING_GAIN * right_torque * steering_angle);
+            right_torque -= (int16_t)(torque_vectoring_gain * right_torque * steering_angle);
         }
     }
 

@@ -16,7 +16,14 @@
  * @param None
  * @retval None
  */
-void CAN_Parse_Dashboard();
+void CAN_Parse_Dashboard_Selector();
+
+/**
+ * @brief Parses Dashboard 11-bit Inputs CAN message.
+ * @param None
+ * @retval None
+ */
+void CAN_Parse_Dashboard_Inputs();
 
 // ========== EMUS BMS Parsing Functions ==========
 
