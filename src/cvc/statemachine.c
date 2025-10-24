@@ -18,7 +18,7 @@ void CVC_StateMachine() {
     CAN_Parse_EMUS_BatteryVoltageOverallParameters();  // HV battery voltage
     CAN_Parse_Inverter_VoltageParameters(0);           // Inverter 1 voltage - Fast message
     CAN_Parse_Inverter_VoltageParameters(1);           // Inverter 2 voltage - Fast message
-    CAN_Parse_Dashboard();                             // Dashboard state
+    CAN_Parse_Dashboard_Selector();                             // Dashboard state
 
     volatile vehicle_state_t state = CVC_data[CVC_STATE];
     volatile drive_state_t drive_mode = NEUTRAL;

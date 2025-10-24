@@ -7,7 +7,7 @@
  * @param uint8_t data[8]: Array of 8 bytes of data to be parsed
  * @retval None
  */
-void CAN_Parse_Dashboard() {
+void CAN_Parse_Dashboard_Selector() {
     if (CAN_data_parsed[DASHBOARD_Selector]) {
         return;
     }
@@ -17,6 +17,23 @@ void CAN_Parse_Dashboard() {
     }
     CVC_data[DASH_REQUESTED_STATE] = data[0];
     CAN_data_parsed[DASHBOARD_Selector] = true;
+}
+
+/**
+ * @brief Parses Dashboard 11-bit CAN message.
+ * @param uint8_t data[8]: Array of 8 bytes of data to be parsed
+ * @retval None
+ */
+void CAN_Parse_Dashboard_Inputs() {
+    if (CAN_data_parsed[DASHBOARD_Inputs]) {
+        return;
+    }
+    uint8_t data[8] = {0};
+    for (uint8_t i = 0; i < 8; i++) {
+        data[i] = (CAN_data[DASHBOARD_Inputs] >> (i * 8)) & 0xFF;
+    }
+    CVC_data[DASH_POT_VALUE] = data[0];
+    CAN_data_parsed[DASHBOARD_Inputs] = true;
 }
 
 // TODO: Implement 11-bit CAN message parsing functions

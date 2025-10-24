@@ -10,7 +10,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum {
+typedef enum
+{
     EMUS_OverallParameters,
     EMUS_DiagnosticCodes,
     EMUS_BatteryVoltageOverallParameters,
@@ -28,6 +29,7 @@ typedef enum {
     VDM_AccelerationData,
     VDM_YawRateData,
     DASHBOARD_Selector,
+    DASHBOARD_Inputs,
     SENSORBOARD_Data,
     INVERTER1_Temp1,
     INVERTER1_Temp2,
@@ -70,33 +72,34 @@ typedef enum {
     NUM_MESSAGES,
 } CAN_Message_Index;
 
-typedef enum {
+typedef enum
+{
     // === CVC Data ===
     CVC_THROTTLE_ADC,
     CVC_THROTTLE,
     CVC_THROTTLE_VALID,
-    CVC_EFFICIENCY,              // Vehicle efficiency (W/km)
-    CVC_ODOMETER,                // Odometer (m)
-    CVC_DRIVE_MODE,              // 0 = neutral, 1 = drive, 2 = reverse
-    CVC_STATE,                   // vehicle_state_t (state machine state)
-    CVC_LV_VOLTAGE,              // Low voltage system voltage
-    CVC_LEFT_TORQUE,             // Left motor torque
-    CVC_RIGHT_TORQUE,            // Right motor torque
-    CVC_INVERTER1_TORQUE_LIMIT,  // Undervoltage protection torque limit
-    CVC_INVERTER2_TORQUE_LIMIT,  // Undervoltage protection torque limit
-    CVC_LEFT_DIRECTION,          // Left motor direction
-    CVC_RIGHT_DIRECTION,         // Right motor direction
-    CVC_PRECHARGE_BTN,           // Precharge button state
-    CVC_LV_CHARGE_STATE,         // LV charge state
-    CVC_AIR_1_STATE,             // Air 1 state
-    CVC_AIR_2_STATE,             // Air 2 state
-    CVC_DCDC_STATE,              // DCDC state
-    CVC_COCKPIT_BRB_STATE,       // Cockpit BRB state
-    CVC_BOT_STATE,               // BOT state
-    CVC_IMD_STATE,               // IMD state
-    CVC_BMS_STATE,               // BMS state
-    CVC_MAIN_LOOP_TIME,          // Main loop time (ms)
-    CVC_RX_QUEUE_SIZE,           // Number of unprocessed messages in RX queue
+    CVC_EFFICIENCY,             // Vehicle efficiency (W/km)
+    CVC_ODOMETER,               // Odometer (m)
+    CVC_DRIVE_MODE,             // 0 = neutral, 1 = drive, 2 = reverse
+    CVC_STATE,                  // vehicle_state_t (state machine state)
+    CVC_LV_VOLTAGE,             // Low voltage system voltage
+    CVC_LEFT_TORQUE,            // Left motor torque
+    CVC_RIGHT_TORQUE,           // Right motor torque
+    CVC_INVERTER1_TORQUE_LIMIT, // Undervoltage protection torque limit
+    CVC_INVERTER2_TORQUE_LIMIT, // Undervoltage protection torque limit
+    CVC_LEFT_DIRECTION,         // Left motor direction
+    CVC_RIGHT_DIRECTION,        // Right motor direction
+    CVC_PRECHARGE_BTN,          // Precharge button state
+    CVC_LV_CHARGE_STATE,        // LV charge state
+    CVC_AIR_1_STATE,            // Air 1 state
+    CVC_AIR_2_STATE,            // Air 2 state
+    CVC_DCDC_STATE,             // DCDC state
+    CVC_COCKPIT_BRB_STATE,      // Cockpit BRB state
+    CVC_BOT_STATE,              // BOT state
+    CVC_IMD_STATE,              // IMD state
+    CVC_BMS_STATE,              // BMS state
+    CVC_MAIN_LOOP_TIME,         // Main loop time (ms)
+    CVC_RX_QUEUE_SIZE,          // Number of unprocessed messages in RX queue
     // === Front Sensor Board ==
     SENSOR_THROTTLE_ADC,
     SENSOR_STEERING_ANGLE,
@@ -104,7 +107,8 @@ typedef enum {
     SENSOR_RIGHT_WHEELSPEED,
     SENSOR_BRAKESWITCH,
     // === Dashboard ===
-    DASH_REQUESTED_STATE,  // 0 = neutral, 1 = drive, 2 = reverse
+    DASH_REQUESTED_STATE, // 0 = neutral, 1 = drive, 2 = reverse
+    DASH_POT_VALUE,       // Potentiometer value (0-255)
     // === EMUS BMS ===
     // Overall Parameters
     BMS_IGNITION,
@@ -392,4 +396,4 @@ extern volatile bool CAN_data_parsed[NUM_MESSAGES];
 // Data stored as single 64-bit integer
 extern volatile uint64_t CVC_data[NUM_DATA_VALUES];
 
-#endif  // CVC_DATA_H
+#endif // CVC_DATA_H
